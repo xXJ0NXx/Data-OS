@@ -257,9 +257,9 @@ function _ilog(level,msg){window._inspectLog.push({level,msg,time:new Date().toL
 window.onerror=function(msg,src,line,col,err){_ilog("error",(err?err.message:msg)+(src?" \u2014 "+src.split("/").pop()+":"+line:""));return false;};
 window.onunhandledrejection=function(e){_ilog("error","Unhandled promise rejection: "+(e.reason?.message||String(e.reason)||"unknown"));};
 
-/* Wire ESC to goBack when launched from terminal. Returns true if terminal-launched (skip Back button). */
+/* Wire ESC to goBack when launched from terminal (directly or via explorer). Returns true if terminal-launched (skip Back button). */
 function bindEscIfTerminal(goBack){
-  if(goBack!==showTerminal)return false;
+  if(goBack!==showTerminal&&!window._termPrint)return false;
   function onEsc(e){if(e.key==="Escape"){document.removeEventListener("keydown",onEsc);goBack();}}
   document.addEventListener("keydown",onEsc);
   return true;
@@ -270,7 +270,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v9.1.0";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v9.1.1";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -291,18 +291,7 @@ function showIframeGame(srcdoc,goBack,showBack){
 
   document.body.appendChild(iframe);
 
-  if(showBack&&goBack){
-    const isTerminal=bindEscIfTerminal(goBack);
-    if(!isTerminal){
-      const backBtn=document.createElement("button");
-      backBtn.textContent="← Back";
-      backBtn.style.cssText="position:fixed;top:10px;right:10px;z-index:10;padding:6px 14px;font-size:13px;cursor:pointer;background:rgba(0,0,0,0.7);color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;";
-      backBtn.onmouseenter=()=>{backBtn.style.background="rgba(0,255,0,0.15)";backBtn.style.borderColor="#0f0";};
-      backBtn.onmouseleave=()=>{backBtn.style.background="rgba(0,0,0,0.7)";backBtn.style.borderColor="rgba(0,255,0,0.4)";};
-      backBtn.onclick=()=>{if(goBack)goBack();};
-      document.body.appendChild(backBtn);
-    }
-  }
+  if(showBack&&goBack)bindEscIfTerminal(goBack);
 
   addCopyright();
 }
@@ -401,7 +390,7 @@ function launchMusicPlayer(goBack){
 <html>
 <head>
 <meta charset="utf-8">
-<title>DATA PLAYER v1.0</title>
+<title>MUSIC PLAYER v1.0</title>
 <style>
 html,body{margin:0;padding:0;min-height:100%;background:#000;color:#0f0;font-family:monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;}
 *{scrollbar-width:none;}*::-webkit-scrollbar{display:none;}
@@ -529,7 +518,7 @@ button.active{background:rgba(0,255,0,0.2);border-color:#0f0;}
 
 <div class="player-window" id="win">
   <div class="player-titlebar">
-    <span>DATA PLAYER v1.0</span>
+    <span>MUSIC PLAYER v1.0</span>
 
   </div>
 
@@ -910,21 +899,28 @@ document.addEventListener("keydown",e=>{
   iframe.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:1;background:#000;";
   iframe.srcdoc=srcdoc;
   document.body.appendChild(iframe);
-  if(goBack&&!isTerminal){
-    const backBtn=document.createElement("button");
-    backBtn.textContent="← Back";
-    backBtn.style.cssText="position:fixed;top:10px;right:10px;z-index:10;padding:6px 14px;font-size:13px;cursor:pointer;background:rgba(0,0,0,0.7);color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;";
-    backBtn.onmouseenter=()=>{backBtn.style.background="rgba(0,255,0,0.15)";backBtn.style.borderColor="#0f0";};
-    backBtn.onmouseleave=()=>{backBtn.style.background="rgba(0,0,0,0.7)";backBtn.style.borderColor="rgba(0,255,0,0.4)";};
-    backBtn.onclick=goBack;
-    document.body.appendChild(backBtn);
+
+  if(isTerminal){
+    // Terminal: ESC already wired by bindEscIfTerminal — no visible button needed
+  } else {
+    // EZ-Mode or other non-terminal: show visible exit button + ESC
+    const exitBtn=document.createElement("button");
+    exitBtn.textContent="✕ Exit";
+    exitBtn.className="game-exit-btn";
+    exitBtn.style.position="fixed";
+    exitBtn.onclick=()=>{if(goBack)goBack();};
+    document.body.appendChild(exitBtn);
+    function musicEscKey(e){if(e.key==="Escape"){document.removeEventListener("keydown",musicEscKey);if(goBack)goBack();}}
+    document.addEventListener("keydown",musicEscKey);
   }
+
   addCopyright();
 }
 
 /* ══════════════════ MENU ══════════════════ */
 function showMenu(){
   clearBody();
+  window._termPrint = null;
   const page=document.createElement("div");page.className="menu-page";
   const h1=document.createElement("h1");h1.textContent="EZ-Mode";
   page.appendChild(h1);
@@ -2459,7 +2455,6 @@ function launchNotepad(initialPath,initialContent,goBack){
     const wordWrapBtn=document.createElement("button");wordWrapBtn.textContent="Word Wrap: ON";
     wordWrapBtn.onclick=()=>{ww=!ww;ta.style.whiteSpace=ww?"pre-wrap":"pre";ta.style.overflowX=ww?"hidden":"auto";wordWrapBtn.textContent="Word Wrap: "+(ww?"ON":"OFF");};
     const btns=[newBtn,openBtn,saveBtn,wordWrapBtn];
-    if(goBack&&goBack!==showTerminal){const backBtn=document.createElement("button");backBtn.textContent="← Back";backBtn.onclick=goBack;btns.unshift(backBtn);}
     btns.forEach(b=>menubar.appendChild(b));
     function updateStatus(){const lines=ta.value.substring(0,ta.selectionStart).split("\n");posSpan.textContent=`Ln ${lines.length}, Col ${lines[lines.length-1].length+1}`;lenSpan.textContent="Length: "+ta.value.length;}
     ta.oninput=updateStatus;ta.onkeyup=updateStatus;ta.onclick=updateStatus;
@@ -2472,7 +2467,6 @@ function launchCalculator(goBack){
   if(window._termPrint)window._termPrint("Opening Calculator... ESC to exit.");_ilog("log","Opening Calculator... ESC to exit.");
   makeGameWindow("Calculator",null,null,(win)=>{
     win.style.display="flex";win.style.flexDirection="column";
-    if(goBack&&goBack!==showTerminal){const backBtn=document.createElement("button");backBtn.textContent="← Back";backBtn.style.cssText="position:fixed;top:10px;right:10px;z-index:200;padding:6px 14px;font-size:13px;cursor:pointer;background:rgba(0,0,0,0.7);color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;";backBtn.onmouseenter=()=>{backBtn.style.background="rgba(0,255,0,0.15)";backBtn.style.borderColor="#0f0";};backBtn.onmouseleave=()=>{backBtn.style.background="rgba(0,0,0,0.7)";backBtn.style.borderColor="rgba(0,255,0,0.4)";};backBtn.onclick=goBack;document.body.appendChild(backBtn);}
     const inner=document.createElement("div");
     inner.style.cssText="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;";
     const calcWrap=document.createElement("div");
@@ -2607,7 +2601,7 @@ function launchExplorer(startPath,goBack){
                 "2048.exe":       ()=>launch2048(returnToExplorer),
                 "doom.exe":       ()=>showDoom(returnToExplorer),
                 "wolf3d.exe":     ()=>showWolf3D(returnToExplorer),
-                "taskmgr.exe":    ()=>{},
+                "taskmgr.exe":    ()=>showStress(returnToExplorer),
                 "chrome.exe":     ()=>{},
                 "EZ-Mode.html":   ()=>showMenu(),
               };
@@ -2649,7 +2643,7 @@ const fs={
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
       "taskmgr.exe":"(executable)",
-      "readme.txt":"Data OS 9.1.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  urlloader.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "readme.txt":"Data OS 9.1.1 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  urlloader.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -2755,16 +2749,6 @@ function showTerminal(goBack){
   inputRow.appendChild(prompt);inputRow.appendChild(inp);
   page.appendChild(out);page.appendChild(inputRow);
 
-  if(goBack){
-    const backBtn=document.createElement("button");
-    backBtn.textContent="← EZ-Mode";
-    backBtn.style.cssText="position:fixed;top:10px;right:10px;z-index:10;padding:6px 14px;font-size:13px;cursor:pointer;background:rgba(0,0,0,0.2);color:#0f0;border:1px solid rgba(0,255,0,0.3);font-family:monospace;";
-    backBtn.onmouseenter=()=>{backBtn.style.background="rgba(0,255,0,0.15)";backBtn.style.borderColor="#0f0";};
-    backBtn.onmouseleave=()=>{backBtn.style.background="rgba(0,0,0,0.2)";backBtn.style.borderColor="rgba(0,255,0,0.3)";};
-    backBtn.onclick=goBack;
-    document.body.appendChild(backBtn);
-  }
-
   document.body.appendChild(page);
   addCopyright();
 
@@ -2812,15 +2796,7 @@ function showTerminal(goBack){
     "explorer.exe":()=>launchExplorer("C:\\Users\\anonymous"),
     "chrome.exe":()=>{print("Google Chrome is already running.");},
     "cmd.exe":()=>{print("Microsoft Windows [Version 10.0.19245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
-    "taskmgr.exe":()=>{
-      print("Windows Task Manager");print("");
-      print("Image Name                     PID  CPU   Mem Usage");
-      print("========================= ======== ====  ============");
-      [["System Idle Process","0","99","24 K"],["System","4","0","2,048 K"],
-       ["svchost.exe","812","0","18,432 K"],["explorer.exe","2048","0","54,320 K"],
-       ["chrome.exe","3120","1","210,840 K"],["cmd.exe","4200","0","3,120 K"]]
-      .forEach(([n,p,c,m])=>print(`${n.padEnd(26)}${p.padStart(8)}  ${c.padStart(3)}%  ${m.padStart(12)}`));
-    },
+    "taskmgr.exe":()=>{print("Opening Task Manager...");setTimeout(()=>showStress(showTerminal),100);},
     "htmleditor.exe":()=>{print("Opening HTML Editor...");setTimeout(()=>showEditor("",showTerminal),100);},
     "urlloader.exe":()=>{print("Opening URL Loader...");setTimeout(()=>showURLPage(showTerminal),100);},
     "base64.exe":()=>{print("Opening Base64 Tool...");setTimeout(()=>showBase64(showTerminal),100);},
@@ -2834,7 +2810,7 @@ function showTerminal(goBack){
   };
 
   let user="anonymous";
-  let cwd="C:\\Users\\anonymous";
+  let cwd=window._termCwd||"C:\\Users\\anonymous";
   let history=[],histIdx=-1;
 
   function normPath(p){
@@ -3051,7 +3027,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 9.1.0]");
+        print("Data OS Terminal [Version 9.1.1]");
         print("");
         break;
 
@@ -3074,7 +3050,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                9.1.0 Build 19246");
+        print("OS Version:                9.1.1 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -3199,9 +3175,9 @@ function showTerminal(goBack){
               print(`'${tokens[0]}' is not recognized as an internal or external command,`);
               print(`operable program or batch file.`,"#f55");break;
             }
-            executables[exeMatch]();break;
+            window._termCwd=cwd;executables[exeMatch]();break;
           }
-          const gameMap={"pong":()=>launchPong(showTerminal),"tetris":()=>launchTetris(showTerminal),"minesweeper":()=>launchMinesweeper(showTerminal),"snake":()=>launchSnake(showTerminal),"breakout":()=>launchBreakout(showTerminal),"2048":()=>launch2048(showTerminal),"doom":()=>{print("Loading DOOM...");setTimeout(()=>showDoom(showTerminal),100);},"wolf3d":()=>{print("Loading Wolfenstein 3D...");setTimeout(()=>showWolf3D(showTerminal),100);}};
+          const gameMap={"pong":()=>{window._termCwd=cwd;launchPong(showTerminal);},"tetris":()=>{window._termCwd=cwd;launchTetris(showTerminal);},"minesweeper":()=>{window._termCwd=cwd;launchMinesweeper(showTerminal);},"snake":()=>{window._termCwd=cwd;launchSnake(showTerminal);},"breakout":()=>{window._termCwd=cwd;launchBreakout(showTerminal);},"2048":()=>{window._termCwd=cwd;launch2048(showTerminal);},"doom":()=>{window._termCwd=cwd;print("Loading DOOM...");setTimeout(()=>showDoom(showTerminal),100);},"wolf3d":()=>{window._termCwd=cwd;print("Loading Wolfenstein 3D...");setTimeout(()=>showWolf3D(showTerminal),100);}};
           const gameKey=gameMap[cmd]?cmd:gameMap[cmd.replace(/\.exe$/,"")]?cmd.replace(/\.exe$/,""):null;
           if(gameKey){
             const gamesPath=canonicalizePath("C:\\Users\\anonymous\\Games");
@@ -3214,7 +3190,7 @@ function showTerminal(goBack){
             const fileNode=getEntry(filePath);
             const parentNode=getEntry(cwd);
             const content=fileNode!==null?fileNode:(parentNode&&typeof parentNode==="object"?parentNode[txtName]:null);
-            if(content!==null&&typeof content==="string"){launchNotepad(txtName,content);break;}
+            if(content!==null&&typeof content==="string"){window._termCwd=cwd;launchNotepad(txtName,content);break;}
           }
           print(`'${tokens[0]}' is not recognized as an internal or external command,`);
           print(`operable program or batch file.`,"#f55");
@@ -3224,7 +3200,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 9.1.0`);
+  print(`DATA OS 9.1.1`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
