@@ -1251,6 +1251,952 @@ function showWebRTC(goBack){
   }
 }
 
+
+/* ══════════════════ GITFETCH ══════════════════ */
+function showGitFetch(goBack){
+  if(!goBack)goBack=showMenu;
+  const fromTerminal=!!(window._termPrint);
+  clearBody();
+  const srcdoc=`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gitfetch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green: #0f0;
+            --green-dim: #0a0;
+            --green-faint: rgba(0,255,0,0.08);
+            --green-border: rgba(0,255,0,0.2);
+            --green-border-active: rgba(0,255,0,0.6);
+            --bg: #000;
+            --bg-panel: #0a0a0a;
+            --bg-card: #050505;
+            --bg-input: #0d0d0d;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--green);
+            font-family: monospace;
+            overflow: hidden;
+        }
+
+        .app {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--green-border);
+            background: #000;
+            flex-shrink: 0;
+        }
+
+        .app-title {
+            font-size: 13px;
+            letter-spacing: 4px;
+            color: var(--green);
+            text-transform: uppercase;
+        }
+
+        .app-badge {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--green-dim);
+            border: 1px solid var(--green-border);
+            padding: 2px 8px;
+        }
+
+        .app-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 230px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--green-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-panel);
+        }
+
+        .sidebar-header {
+            padding: 10px 14px;
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: var(--green-dim);
+            border-bottom: 1px solid var(--green-border);
+            text-transform: uppercase;
+        }
+
+        .sidebar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--green-border); }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-group-label {
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: var(--green-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        /* ── Custom checkbox/radio styling ── */
+        .filter-option input[type="checkbox"],
+        .filter-option input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 13px;
+            height: 13px;
+            border: 1px solid var(--green-border);
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .filter-option input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .filter-option input[type="checkbox"]:checked,
+        .filter-option input[type="radio"]:checked {
+            border-color: var(--green);
+            background: var(--green-faint);
+        }
+
+        .filter-option input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 3px;
+            width: 5px;
+            height: 8px;
+            border-right: 2px solid var(--green);
+            border-bottom: 2px solid var(--green);
+            transform: rotate(45deg);
+        }
+
+        /* FIXED: use pixel offsets instead of 50%+translate for reliable centering */
+        .filter-option input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        .filter-option input[type="checkbox"]:not(:checked) + label,
+        .filter-option input[type="radio"]:not(:checked) + label {
+            color: rgba(0,255,0,0.3);
+        }
+
+        .filter-option label {
+            font-size: 12px;
+            color: var(--green);
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: color 0.15s;
+        }
+
+        .filter-num-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--green-dim);
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+        }
+
+        .filter-num {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--green-border);
+            color: var(--green);
+            font-family: monospace;
+            font-size: 12px;
+            padding: 4px 6px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .filter-num:focus { border-color: var(--green); }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--green-border);
+            margin: 10px 0;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--green-border);
+            background: var(--bg-panel);
+            flex-shrink: 0;
+        }
+
+        .search-prompt {
+            color: var(--green-dim);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--green);
+            font-family: monospace;
+            font-size: 13px;
+            outline: none;
+            caret-color: var(--green);
+        }
+
+        .search-input::placeholder { color: rgba(0,255,0,0.25); }
+
+        .search-btn {
+            background: transparent;
+            border: 1px solid var(--green-border);
+            color: var(--green-dim);
+            font-family: monospace;
+            font-size: 12px;
+            padding: 5px 14px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .search-btn:hover {
+            background: var(--green-faint);
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .results-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .results-wrap::-webkit-scrollbar { width: 4px; }
+        .results-wrap::-webkit-scrollbar-track { background: transparent; }
+        .results-wrap::-webkit-scrollbar-thumb { background: var(--green-border); }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 16px;
+            opacity: 0.35;
+        }
+
+        .empty-icon {
+            font-size: 40px;
+            color: var(--green-dim);
+        }
+
+        .empty-text {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--green-dim);
+            text-transform: uppercase;
+        }
+
+        .empty-sub {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--green-dim);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 7px 16px;
+            border-top: 1px solid var(--green-border);
+            background: var(--bg-panel);
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--green-dim);
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green-dim);
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-dot.active {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.3;} }
+
+        .results-info {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--green-dim);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--green-border);
+        }
+
+        .repo {
+            border: 1px solid var(--green-border);
+            background: var(--bg-card);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .repo:hover {
+            border-color: rgba(0,255,0,0.4);
+            background: var(--green-faint);
+        }
+
+        .repo-title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+
+        .repo-link {
+            color: var(--green);
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        .repo-link:hover { text-decoration: underline; }
+
+        .repo-stats {
+            display: flex;
+            gap: 14px;
+            font-size: 11px;
+            color: var(--green-dim);
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .repo-desc {
+            font-size: 11px;
+            color: rgba(0,255,0,0.6);
+            line-height: 1.5;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .repo-homepage {
+            font-size: 11px;
+            color: var(--green-dim);
+        }
+
+        .repo-homepage a { color: var(--green); text-decoration: none; }
+        .repo-homepage a:hover { text-decoration: underline; }
+
+        .files { display: none; margin-top: 10px; }
+
+        .file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            border: 1px solid var(--green-border);
+            border-top: none;
+            font-size: 11px;
+            color: rgba(0,255,0,0.7);
+            letter-spacing: 0.5px;
+            transition: background 0.1s;
+        }
+        .file:first-child { border-top: 1px solid var(--green-border); }
+        .file:hover { background: var(--green-faint); }
+
+        .file-icons { display: flex; gap: 10px; }
+        .file-icons a { color: var(--green-dim); font-size: 13px; cursor: pointer; transition: color 0.15s; }
+        .file-icons a:hover { color: var(--green); }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--green-border);
+            color: var(--green-dim);
+            font-family: monospace;
+            font-size: 11px;
+            padding: 3px 10px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: var(--green-faint);
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .user-details {
+            display: none;
+            margin-top: 10px;
+            border: 1px solid var(--green-border);
+            padding: 12px;
+            background: var(--bg-panel);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 0;
+            float: left;
+            margin-right: 14px;
+            border: 1px solid var(--green-border);
+            filter: grayscale(100%) contrast(1.2);
+            mix-blend-mode: screen;
+        }
+
+        .user-info h4 { color: var(--green); font-size: 14px; margin-bottom: 4px; letter-spacing: 2px; }
+        .user-info p { font-size: 11px; color: rgba(0,255,0,0.65); margin-bottom: 3px; letter-spacing: 0.5px; }
+
+        .user-stats {
+            clear: both;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--green-border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--green-dim);
+            letter-spacing: 1px;
+        }
+
+        .user-links a { color: var(--green); text-decoration: none; font-size: 11px; display: block; margin-top: 2px; }
+        .user-links a:hover { text-decoration: underline; }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px 0;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--green-dim);
+        }
+
+        .page-btn {
+            background: transparent;
+            border: 1px solid var(--green-border);
+            color: var(--green-dim);
+            font-family: monospace;
+            font-size: 11px;
+            padding: 5px 14px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background: var(--green-faint);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <div class="app-header">
+        <span class="app-title">gitfetch</span>
+        <span class="app-badge"><i class="fab fa-github"></i>&nbsp; API</span>
+        <span class="app-badge" style="margin-left:auto;border-color:transparent;color:rgba(0,255,0,0.25);letter-spacing:1px;font-size:9px;">original code by dinguschan</span>
+        <button id="backBtn" onclick="window.parent.postMessage('gitfetch-back','*')" style="display:none;margin-left:12px;background:transparent;border:1px solid rgba(255,85,85,0.35);color:#f55;font-family:monospace;font-size:11px;padding:4px 14px;letter-spacing:2px;cursor:pointer;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,85,85,0.1)';this.style.borderColor='#f55';" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,85,85,0.35)';">&#x2190; BACK</button>
+    </div>
+
+    <div class="app-body">
+
+        <div class="sidebar">
+            <div class="sidebar-header">// FILTERS</div>
+            <div class="sidebar-scroll">
+
+                <div class="filter-group">
+                    <span class="filter-group-label">// Search Type</span>
+                    <div class="filter-option">
+                        <input type="radio" id="searchRepos" name="searchType" value="repositories" checked>
+                        <label for="searchRepos">Repositories</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="radio" id="searchUsers" name="searchType" value="users">
+                        <label for="searchUsers">Users</label>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="filter-group">
+                    <span class="filter-group-label">// Display</span>
+                    <div class="filter-option">
+                        <input type="checkbox" id="showStars" checked>
+                        <label for="showStars">Stars</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="showForks" checked>
+                        <label for="showForks">Forks</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="showWatchers" checked>
+                        <label for="showWatchers">Watchers</label>
+                    </div>
+                    <div class="filter-option">
+                        <input type="checkbox" id="showIssues" checked>
+                        <label for="showIssues">Issues</label>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="filter-group">
+                    <span class="filter-group-label">// Min Stars</span>
+                    <div class="filter-num-label"><span>VALUE</span><span id="minStarsValue">0</span></div>
+                    <input class="filter-num" type="number" id="minStars" min="0" max="50000" value="0" step="1">
+                </div>
+
+                <div class="filter-group">
+                    <span class="filter-group-label">// Min Forks</span>
+                    <div class="filter-num-label"><span>VALUE</span><span id="minForksValue">0</span></div>
+                    <input class="filter-num" type="number" id="minForks" min="0" max="20000" value="0" step="1">
+                </div>
+
+                <hr class="divider">
+
+                <div class="filter-group">
+                    <span class="filter-group-label">// Language</span>
+                    <div class="filter-option"><input type="checkbox" id="langJavaScript" value="javascript"><label for="langJavaScript">JavaScript</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langPython" value="python"><label for="langPython">Python</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langJava" value="java"><label for="langJava">Java</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langCPP" value="cpp"><label for="langCPP">C++</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langHTML" value="html"><label for="langHTML">HTML</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langCSS" value="css"><label for="langCSS">CSS</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langTypeScript" value="typescript"><label for="langTypeScript">TypeScript</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langC" value="c"><label for="langC">C</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langCSharp" value="csharp"><label for="langCSharp">C#</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langPHP" value="php"><label for="langPHP">PHP</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langRuby" value="ruby"><label for="langRuby">Ruby</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langGo" value="go"><label for="langGo">Go</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langRust" value="rust"><label for="langRust">Rust</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langSwift" value="swift"><label for="langSwift">Swift</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langKotlin" value="kotlin"><label for="langKotlin">Kotlin</label></div>
+                    <div class="filter-option"><input type="checkbox" id="langDart" value="dart"><label for="langDart">Dart</label></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="main">
+
+            <div class="search-bar">
+                <span class="search-prompt">root@github:~$</span>
+                <input class="search-input" type="text" id="repoSearch"
+                    placeholder="query... (use '#' for tags)"
+                    onkeypress="if(event.key==='Enter') searchRepos()">
+                <button class="search-btn" onclick="searchRepos()">EXEC</button>
+            </div>
+
+            <div class="results-wrap" id="results">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon"><i class="fab fa-github"></i></div>
+                    <div class="empty-text">Awaiting Query</div>
+                    <div class="empty-sub">type a search term and press EXEC</div>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <span><span class="status-dot" id="statusDot"></span><span id="statusText">IDLE</span></span>
+                <span id="statusCount"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const searchInput = document.getElementById('repoSearch');
+const resultsDiv = document.getElementById('results');
+const emptyState = document.getElementById('emptyState');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const statusCount = document.getElementById('statusCount');
+
+let currentSearchData = [];
+let currentPage = 1;
+let totalResults = 0;
+const resultsPerPage = 30;
+
+function setStatus(state, text, count) {
+    statusDot.className = 'status-dot' + (state === 'active' ? ' active' : '');
+    statusText.textContent = text;
+    statusCount.textContent = count || '';
+}
+
+document.getElementById('minStars').addEventListener('input', function() {
+    document.getElementById('minStarsValue').textContent = this.value;
+    if (searchInput.value.trim()) searchRepos();
+});
+
+document.getElementById('minForks').addEventListener('input', function() {
+    document.getElementById('minForksValue').textContent = this.value;
+    if (searchInput.value.trim()) searchRepos();
+});
+
+document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+        if (inp.name === 'searchType' || inp.id.startsWith('lang')) {
+            if (searchInput.value.trim()) searchRepos();
+        } else {
+            filterResults();
+        }
+    });
+});
+
+function searchRepos(page = 1) {
+    const query = searchInput.value.trim();
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
+
+    if (!query) {
+        resultsDiv.innerHTML = '';
+        resultsDiv.appendChild(emptyState);
+        emptyState.style.display = 'flex';
+        setStatus('', 'IDLE');
+        return;
+    }
+
+    if (page === 1) {
+        currentPage = 1;
+        currentSearchData = [];
+    }
+
+    setStatus('active', 'FETCHING...');
+    resultsDiv.innerHTML = '<div style="padding:20px;font-size:11px;letter-spacing:3px;color:rgba(0,255,0,0.4);">// scanning repositories...</div>';
+
+    const searchQuery = buildSearchQuery(query);
+    const apiUrl = \`https://api.github.com/search/\${searchType}?q=\${encodeURIComponent(searchQuery)}&page=\${page}&per_page=\${resultsPerPage}\`;
+
+    fetch(apiUrl)
+        .then(r => r.json())
+        .then(data => {
+            if (data.items && data.items.length) {
+                currentSearchData = data.items;
+                totalResults = data.total_count;
+                currentPage = page;
+                displayResults(data.items);
+                setStatus('active', 'OK', \`\${totalResults.toLocaleString()} RESULTS\`);
+            } else {
+                resultsDiv.innerHTML = '<div style="padding:20px;font-size:11px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// no results found</div>';
+                totalResults = 0;
+                setStatus('', 'NO RESULTS');
+            }
+        })
+        .catch(err => {
+            resultsDiv.innerHTML = '<div style="padding:20px;font-size:11px;letter-spacing:2px;color:rgba(255,80,80,0.7);">// error: api request failed</div>';
+            setStatus('', 'ERROR');
+        });
+}
+
+function buildSearchQuery(query) {
+    let q = query;
+    const minStars = document.getElementById('minStars').value;
+    const minForks = document.getElementById('minForks').value;
+    if (minStars > 0) q += \` stars:>=\${minStars}\`;
+    if (minForks > 0) q += \` forks:>=\${minForks}\`;
+    document.querySelectorAll('input[id^="lang"]:checked').forEach(inp => {
+        q += \` language:\${inp.value}\`;
+    });
+    return q;
+}
+
+function displayResults(items) {
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
+    resultsDiv.innerHTML = '';
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'results-info';
+    const start = (currentPage - 1) * resultsPerPage + 1;
+    const end = Math.min(currentPage * resultsPerPage, totalResults);
+    infoDiv.textContent = \`// showing \${start}–\${end} of \${totalResults.toLocaleString()} results  [page \${currentPage}]\`;
+    resultsDiv.appendChild(infoDiv);
+
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'repo';
+
+        if (searchType === 'repositories') {
+            card.innerHTML = \`
+                <div class="repo-title-row">
+                    <a class="repo-link" href="#" onclick="fetchRepoFiles('\${item.full_name}', this); return false;">
+                        \${item.owner.login}/<strong>\${item.name}</strong>
+                    </a>
+                    <button class="action-btn" onclick="downloadRepoZip('\${item.full_name}')">
+                        <i class="fas fa-file-archive"></i> ZIP
+                    </button>
+                </div>
+                <div class="repo-stats">
+                    <span class="stars-stat"><i class="fas fa-star"></i> \${item.stargazers_count.toLocaleString()}</span>
+                    <span class="forks-stat"><i class="fas fa-code-branch"></i> \${item.forks_count.toLocaleString()}</span>
+                    <span class="watchers-stat"><i class="fas fa-eye"></i> \${item.watchers_count.toLocaleString()}</span>
+                    <span class="issues-stat"><i class="fas fa-circle-exclamation"></i> \${item.open_issues_count.toLocaleString()}</span>
+                </div>
+                <div class="repo-desc">\${parseDescription(item.description)}</div>
+                \${item.homepage ? \`<div class="repo-homepage"><i class="fas fa-link"></i> <a href="\${item.homepage}" target="_blank">\${item.homepage}</a></div>\` : ''}
+                <div class="files"></div>
+            \`;
+        } else {
+            card.innerHTML = \`
+                <div class="repo-title-row">
+                    <a class="repo-link" href="#" onclick="fetchUserDetails('\${item.login}', this); return false;">
+                        \${item.login}
+                    </a>
+                    <button class="action-btn" onclick="window.open('\${item.html_url}','_blank')">
+                        <i class="fab fa-github"></i> PROFILE
+                    </button>
+                </div>
+                <div class="repo-desc">\${item.bio || '// no bio available'}</div>
+                <div class="user-details"></div>
+            \`;
+        }
+
+        resultsDiv.appendChild(card);
+    });
+
+    filterResults();
+
+    const totalPages = Math.min(Math.ceil(totalResults / resultsPerPage), 34);
+    if (totalPages > 1) {
+        const pg = document.createElement('div');
+        pg.className = 'pagination';
+
+        const prev = document.createElement('button');
+        prev.className = 'page-btn';
+        prev.textContent = '← PREV';
+        prev.disabled = currentPage === 1;
+        prev.onclick = () => searchRepos(currentPage - 1);
+        pg.appendChild(prev);
+
+        const info = document.createElement('span');
+        info.textContent = \`\${currentPage} / \${totalPages}\`;
+        pg.appendChild(info);
+
+        const next = document.createElement('button');
+        next.className = 'page-btn';
+        next.textContent = 'NEXT →';
+        next.disabled = currentPage >= totalPages;
+        next.onclick = () => searchRepos(currentPage + 1);
+        pg.appendChild(next);
+
+        resultsDiv.appendChild(pg);
+    }
+}
+
+function filterResults() {
+    const showStars = document.getElementById('showStars').checked;
+    const showForks = document.getElementById('showForks').checked;
+    const showWatchers = document.getElementById('showWatchers').checked;
+    const showIssues = document.getElementById('showIssues').checked;
+    document.querySelectorAll('.stars-stat').forEach(el => el.style.display = showStars ? '' : 'none');
+    document.querySelectorAll('.forks-stat').forEach(el => el.style.display = showForks ? '' : 'none');
+    document.querySelectorAll('.watchers-stat').forEach(el => el.style.display = showWatchers ? '' : 'none');
+    document.querySelectorAll('.issues-stat').forEach(el => el.style.display = showIssues ? '' : 'none');
+}
+
+function parseDescription(desc) {
+    if (!desc) return '// no description available';
+    return desc.replace(/(https?:\\/\\/[^\\s]+)/g, url => \`<a href="\${url}" target="_blank" style="color:var(--green)">\${url}</a>\`);
+}
+
+function fetchRepoFiles(fullName, el) {
+    const filesDiv = el.closest('.repo').querySelector('.files');
+    if (filesDiv.style.display === 'block') { filesDiv.style.display = 'none'; return; }
+    if (filesDiv.innerHTML) { filesDiv.style.display = 'block'; return; }
+
+    filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// loading...</div>';
+    filesDiv.style.display = 'block';
+
+    fetch(\`https://api.github.com/repos/\${fullName}/contents\`)
+        .then(r => r.json())
+        .then(files => {
+            filesDiv.innerHTML = '';
+            files.forEach(file => {
+                const d = document.createElement('div');
+                d.className = 'file';
+                d.innerHTML = \`
+                    <span>\${file.type === 'dir' ? '<i class="fas fa-folder" style="color:rgba(0,255,0,0.5);margin-right:6px;"></i>' : '<i class="fas fa-file-code" style="color:rgba(0,255,0,0.3);margin-right:6px;"></i>'}\${file.name}</span>
+                    <div class="file-icons">
+                        <a href="\${file.html_url}" target="_blank" title="View on GitHub"><i class="fab fa-github"></i></a>
+                        \${file.download_url ? \`<a onclick="downloadFile('\${file.download_url}','\${file.name}')" title="Download"><i class="fas fa-download"></i></a>\` : ''}
+                    </div>
+                \`;
+                filesDiv.appendChild(d);
+            });
+        })
+        .catch(() => { filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading files</div>'; });
+}
+
+function fetchUserDetails(username, el) {
+    const detailsDiv = el.closest('.repo').querySelector('.user-details');
+    if (detailsDiv.style.display === 'block') { detailsDiv.style.display = 'none'; return; }
+    if (detailsDiv.innerHTML) { detailsDiv.style.display = 'block'; return; }
+
+    detailsDiv.innerHTML = '<div style="padding:8px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// fetching user data...</div>';
+    detailsDiv.style.display = 'block';
+
+    fetch(\`https://api.github.com/users/\${username}\`)
+        .then(r => r.json())
+        .then(user => {
+            const joined = new Date(user.created_at).toLocaleDateString();
+            let links = [];
+            if (user.blog) links.push(\`<a href="\${user.blog.startsWith('http') ? user.blog : 'https://'+user.blog}" target="_blank">\${user.blog}</a>\`);
+            if (user.twitter_username) links.push(\`<a href="https://twitter.com/\${user.twitter_username}" target="_blank">@\${user.twitter_username}</a>\`);
+            if (user.email) links.push(\`<a href="mailto:\${user.email}">\${user.email}</a>\`);
+
+            detailsDiv.innerHTML = \`
+                <img src="\${user.avatar_url}" class="user-avatar" alt="\${user.login}">
+                <div class="user-info">
+                    <h4>\${user.name || user.login}</h4>
+                    \${user.bio ? \`<p style="font-style:italic;opacity:0.7">"\${user.bio}"</p>\` : ''}
+                    <p><span style="color:rgba(0,255,0,0.4)">location:</span> \${user.location || 'unknown'}</p>
+                    <p><span style="color:rgba(0,255,0,0.4)">company:</span> \${user.company || 'unknown'}</p>
+                    \${links.length ? \`<div class="user-links" style="margin-top:4px">\${links.join('<br>')}</div>\` : ''}
+                </div>
+                <div class="user-stats">
+                    <span><i class="fas fa-book"></i> \${user.public_repos} repos</span>
+                    <span><i class="fas fa-users"></i> \${user.followers} followers</span>
+                    <span><i class="fas fa-user-plus"></i> \${user.following} following</span>
+                    <span><i class="fas fa-calendar"></i> joined \${joined}</span>
+                </div>
+            \`;
+        })
+        .catch(() => { detailsDiv.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading user</div>'; });
+}
+
+function downloadRepoZip(fullName) {
+    fetch(\`https://api.github.com/repos/\${fullName}\`)
+        .then(r => r.json())
+        .then(repo => {
+            const zipUrl = \`https://github.com/\${fullName}/archive/refs/heads/\${repo.default_branch}.zip\`;
+            const proxy = \`https://api.codetabs.com/v1/tmp?quest=\${encodeURIComponent(zipUrl)}\`;
+            fetch(proxy)
+                .then(r => r.blob())
+                .then(blob => triggerDownload(blob, \`\${fullName.replace('/','_')}.zip\`))
+                .catch(() => alert('// download failed via proxy'));
+        });
+}
+
+function triggerDownload(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+}
+
+function downloadFile(url, filename) {
+    fetch(url).then(r => r.text()).then(data => {
+        const blob = new Blob([data], { type: 'text/plain' });
+        triggerDownload(blob, filename);
+    }).catch(e => console.error(e));
+}
+<\/script>
+</body>
+</html>
+`;
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:1;background:#000;";
+  iframe.srcdoc=srcdoc;
+  document.body.appendChild(iframe);
+  if(!fromTerminal){
+    iframe.addEventListener("load",()=>{
+      try{ iframe.contentDocument.getElementById("backBtn").style.display=""; }catch(e){}
+    });
+    window.addEventListener("message",function onGitBack(e){
+      if(e.data==="gitfetch-back"){
+        window.removeEventListener("message",onGitBack);
+        goBack();
+      }
+    });
+  }
+  function onEsc(e){if(e.key==="Escape"){document.removeEventListener("keydown",onEsc);goBack();}}
+  document.addEventListener("keydown",onEsc);
+  addCopyright();
+}
+
 function showMenu(){
   clearBody();
   window._termPrint = null;
@@ -1276,12 +2222,18 @@ function showMenu(){
     ["File Explorer", ()=>launchExplorer("C:\\Users\\anonymous",showMenu)],
     ["Music Player",   ()=>launchMusicPlayer(showMenu)],
     ["WebRTC",         ()=>showWebRTC(showMenu)],
-    ["Games",          showGames],
+    ["GitFetch",       ()=>showGitFetch(showMenu)],
   ];
 
   apps.forEach(([l,f])=>{
     const b=document.createElement("button");b.textContent=l;b.onclick=f;grid.appendChild(b);
   });
+
+  const gamesBtn=document.createElement("button");
+  gamesBtn.textContent="Games";
+  gamesBtn.onclick=showGames;
+  gamesBtn.style.gridColumn="span 2";
+  grid.appendChild(gamesBtn);
 
   // Small ambience toggle in bottom-right corner, only visible on this menu
   const amb=document.createElement("button");
@@ -2941,6 +3893,7 @@ function launchExplorer(startPath,goBack){
                 "wolf3d.exe":     ()=>showWolf3D(returnToExplorer),
                 "taskmgr.exe":    ()=>showStress(returnToExplorer),
                 "chrome.exe":     ()=>{},
+                "gitfetch.exe":   ()=>showGitFetch(returnToExplorer),
                 "EZ-Mode.html":   ()=>showMenu(),
               };
               if(launchWithReturn[exeName])setTimeout(()=>launchWithReturn[exeName](),100);
@@ -3013,7 +3966,8 @@ const fs={
       "ascii.exe":"(executable)",
       "hacker.exe":"(executable)",
       "music.exe":"(executable)",
-      "webrtc.exe":"(executable)"
+      "webrtc.exe":"(executable)",
+      "gitfetch.exe":"(executable)"
     },
     "C:\\Program Files":{
       "Google":{},
@@ -3070,6 +4024,7 @@ function canonicalizePath(path){
     "doom.exe":      ()=>showDoom(showMenu),
     "wolf3d.exe":    ()=>showWolf3D(showMenu),
     "chrome.exe":    ()=>{},
+    "gitfetch.exe":  ()=>showGitFetch(showMenu),
     "EZ-Mode.html":  ()=>showMenu(),
   };
 })();
@@ -3126,6 +4081,7 @@ function showTerminal(goBack){
     "webrtc.exe":"C:\\Users\\anonymous\\Apps",
     "chrome.exe":"C:\\Program Files\\Google\\Chrome",
     "cmd.exe":null,
+    "gitfetch.exe":"C:\\Users\\anonymous\\Apps",
     "EZ-Mode.html":null,
   };
 
@@ -3147,6 +4103,7 @@ function showTerminal(goBack){
     "hacker.exe":()=>{print("Opening Hacker Typer...");setTimeout(()=>showHackerTyper(showTerminal),100);},
     "music.exe":()=>{print("Opening Music Player... ESC to exit.");setTimeout(()=>launchMusicPlayer(showTerminal),100);},
     "webrtc.exe":()=>{print("Opening WebRTC... ESC to exit.");setTimeout(()=>showWebRTC(showTerminal),100);},
+    "gitfetch.exe":()=>{print("Opening GitFetch... ESC to exit.");setTimeout(()=>showGitFetch(showTerminal),100);},
 
     "EZ-Mode.html":()=>{print("Launching EZ-Mode...");setTimeout(()=>showMenu(),300);},
   };
@@ -3485,6 +4442,7 @@ function showTerminal(goBack){
   "tasklist": "TASKLIST\n\nLists running processes.",
   "time":     "TIME\n\nDisplays the current time.",
   "type":     "TYPE [file]\n\nDisplays the contents of a text file.\n\nUsage: type notes.txt",
+  "gitfetch": "GITFETCH\n\nLaunches the GitFetch GitHub repository and user search tool.\n\nUsage: cd Apps\n       gitfetch.exe",
   "ver":      "VER\n\nDisplays the terminal version.",
   "whoami":   "WHOAMI\n\nDisplays the current user.",
 };
@@ -3498,7 +4456,7 @@ function showTerminal(goBack){
           const cols=["CLS","CD / CHDIR","COPY","DATE","DEL / ERASE","DIR",
                       "ECHO","HELP","HOSTNAME","IPCONFIG","MD / MKDIR","EZ-MODE",
                       "MOVE","PATH","PING","RD / RMDIR","REN / RENAME","RUN / START",
-                      "SET","SYSTEMINFO","TASKLIST","TIME","TYPE","VER","WHOAMI","AMBIENCE"];
+                      "SET","SYSTEMINFO","TASKLIST","TIME","TYPE","VER","WHOAMI","AMBIENCE","GITFETCH"];
           cols.forEach(c=>print("  "+c));
         }
         break;}
