@@ -166,6 +166,11 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 *{scrollbar-width:none;}
 *::-webkit-scrollbar{display:none;}
 
+/* Background ambience canvas */
+#bgAmbience{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:0.18;}
+
+
+
 /* App overlay (notepad, calc, explorer) */
 .app-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:50;display:flex;justify-content:center;align-items:center;}
 .app-window{background:#111;border:2px solid #0f0;font-family:monospace;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(0,255,0,0.3);}
@@ -230,7 +235,12 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 <script>
 /* ── helpers ── */
 function normalizeURL(url){url=url.trim();if(!url)return"";if(/^https?:\/\//i.test(url))return url;return"https://"+url;}
-function clearBody(){document.body.innerHTML="";}
+function clearBody(){
+  // Remove all body children EXCEPT the ambience canvas and toggle button
+  Array.from(document.body.children).forEach(el=>{
+    if(el.id!=='bgAmbience'&&el.id!=='ambienceToggle') el.remove();
+  });
+}
 function makeBtn(label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;return b;}
 function addCopyright(){const c=document.createElement("div");c.className="copyright";c.innerHTML="&copy; 2026 &mdash; Jon Stearns";document.body.appendChild(c);}
   document.addEventListener("keydown",function(e){
@@ -270,7 +280,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v9.1.1";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.0.0";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -918,6 +928,329 @@ document.addEventListener("keydown",e=>{
 }
 
 /* ══════════════════ MENU ══════════════════ */
+function showWebRTC(goBack){
+  if(!goBack)goBack=showMenu;
+  bindEscIfTerminal(goBack);
+
+  const _origGoBack = goBack;
+  goBack = function(){
+    // Destroy PeerJS peer on exit to free the connection
+    if(window._rtcPeer){ try{ window._rtcPeer.destroy(); }catch(e){} window._rtcPeer=null; }
+    _origGoBack();
+  };
+
+  clearBody();
+
+  /* ── inject PeerJS from CDN if not already loaded ── */
+  function _initRTC(isTerminal){
+    const page = document.createElement('div');
+    page.style.cssText='position:fixed;inset:0;display:grid;grid-template-columns:280px 1fr;grid-template-rows:48px 1fr;background:#000;z-index:5;font-family:monospace;color:#0f0;';
+
+    /* scan-line overlay */
+    const scan=document.createElement('div');
+    scan.style.cssText='position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9998;';
+    document.body.appendChild(scan);
+
+    /* ── HEADER ── */
+    const hdr=document.createElement('header');
+    hdr.style.cssText='grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;';
+
+    const logo=document.createElement('div');
+    logo.innerHTML='WebRTC<span style="color:#0a0;font-size:9px;display:block;letter-spacing:3px;font-weight:normal;margin-top:-2px;">WEBRTC DATA CHANNEL // P2P MESSAGING</span>';
+    logo.style.cssText='font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.5);';
+
+    const hRight=document.createElement('div');
+    hRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:12px;';
+
+    function makePill(dotId,txtId,initTxt){
+      const p=document.createElement('div');
+      p.style.cssText='display:flex;align-items:center;gap:7px;padding:4px 12px;border:1px solid rgba(0,255,0,0.2);font-size:10px;color:#0a0;letter-spacing:2px;';
+      const d=document.createElement('div');d.id=dotId;d.style.cssText='width:7px;height:7px;border-radius:50%;background:#333;transition:all 0.3s;';
+      const t=document.createElement('span');t.id=txtId;t.textContent=initTxt;
+      p.appendChild(d);p.appendChild(t);return p;
+    }
+    const sigPill=makePill('rtc-sigDot','rtc-sigText','SIGNAL...');
+    const stPill =makePill('rtc-stDot','rtc-stText','OFFLINE');
+
+    const exitBtn=document.createElement('button');
+    exitBtn.textContent='[ EXIT ]';
+    exitBtn.style.cssText='background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    exitBtn.onmouseover=()=>{exitBtn.style.background='rgba(255,85,85,0.1)';exitBtn.style.borderColor='#f55';};
+    exitBtn.onmouseout=()=>{exitBtn.style.background='#000';exitBtn.style.borderColor='rgba(255,85,85,0.4)';};
+    exitBtn.onclick=goBack;
+
+    hRight.appendChild(sigPill);hRight.appendChild(stPill);
+    if(!isTerminal){hRight.appendChild(exitBtn);}
+    hdr.appendChild(logo);hdr.appendChild(hRight);
+
+    /* ── SIDEBAR ── */
+    const sb=document.createElement('aside');
+    sb.style.cssText='border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;';
+    const sbScroll=document.createElement('div');
+    sbScroll.style.cssText='flex:1;overflow-y:auto;scrollbar-width:thin;';
+
+    function sbSection(labelTxt){
+      const sec=document.createElement('div');sec.style.cssText='padding:14px 14px 10px;';
+      const lbl=document.createElement('div');lbl.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;margin-bottom:10px;text-transform:uppercase;';lbl.textContent=labelTxt;
+      sec.appendChild(lbl);return sec;
+    }
+    function divider(){const d=document.createElement('div');d.style.cssText='height:1px;background:rgba(0,255,0,0.2);';return d;}
+
+    /* Node ID card */
+    const idSec=sbSection('NODE IDENTIFIER');
+    const idCard=document.createElement('div');
+    idCard.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.2);padding:12px;position:relative;cursor:pointer;';
+    const idCardTop=document.createElement('div');idCardTop.style.cssText='position:absolute;top:0;left:0;right:0;height:1px;background:#0f0;box-shadow:0 0 6px #0f0;';
+    const idLbl=document.createElement('div');idLbl.style.cssText='font-size:8px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:6px;';idLbl.textContent='PEER ID';
+    const myId=document.createElement('div');myId.id='rtc-myId';myId.style.cssText='font-size:12px;color:#0f0;word-break:break-all;line-height:1.6;transition:opacity 0.2s;';myId.textContent='INITIALIZING...';
+    myId.onmouseover=()=>myId.style.opacity='0.6';myId.onmouseout=()=>myId.style.opacity='1';
+    const copyHint=document.createElement('div');copyHint.style.cssText='font-size:9px;color:#0a0;margin-top:5px;opacity:0;transition:opacity 0.2s;letter-spacing:1px;';copyHint.textContent='↑ CLICK TO COPY';
+    idCard.onmouseover=()=>copyHint.style.opacity='1';idCard.onmouseout=()=>copyHint.style.opacity='0';
+    idCard.onclick=_copyId;
+    idCard.appendChild(idCardTop);idCard.appendChild(idLbl);idCard.appendChild(myId);idCard.appendChild(copyHint);
+    idSec.appendChild(idCard);
+
+    /* Connect section */
+    const conSec=sbSection('CONNECT TO PEER');
+    const remLbl=document.createElement('div');remLbl.style.cssText='font-size:9px;letter-spacing:2px;color:#0a0;text-transform:uppercase;margin-bottom:5px;';remLbl.textContent='REMOTE PEER ID';
+    const remInput=document.createElement('input');remInput.type='text';remInput.id='rtc-remoteId';remInput.placeholder='PASTE PEER ID...';
+    remInput.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.2);padding:8px 10px;color:#0f0;font-family:monospace;font-size:12px;width:100%;outline:none;margin-bottom:8px;box-sizing:border-box;';
+    remInput.onfocus=()=>remInput.style.borderColor='#0f0';
+    remInput.onblur=()=>remInput.style.borderColor='rgba(0,255,0,0.2)';
+    remInput.oninput=_refreshBtn;
+
+    const conBtn=document.createElement('button');conBtn.id='rtc-conBtn';conBtn.textContent='[ CONNECT ]';conBtn.disabled=true;
+    conBtn.style.cssText='width:100%;background:transparent;color:#0f0;border:1px solid #0f0;font-family:monospace;font-size:12px;padding:8px;letter-spacing:2px;cursor:pointer;margin-bottom:6px;';
+    conBtn.onmouseover=()=>{if(!conBtn.disabled){conBtn.style.background='#0f0';conBtn.style.color='#000';}};
+    conBtn.onmouseout=()=>{conBtn.style.background='transparent';conBtn.style.color='#0f0';};
+    conBtn.onclick=_connectChat;
+
+    const disBtn=document.createElement('button');disBtn.id='rtc-disBtn';disBtn.textContent='[ DISCONNECT ]';
+    disBtn.style.cssText='width:100%;display:none;background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:12px;padding:8px;letter-spacing:2px;cursor:pointer;';
+    disBtn.onmouseover=()=>{disBtn.style.background='rgba(255,85,85,0.1)';disBtn.style.borderColor='#f55';};
+    disBtn.onmouseout=()=>{disBtn.style.background='#000';disBtn.style.borderColor='rgba(255,85,85,0.4)';};
+    disBtn.onclick=_disconnectChat;
+
+    conSec.appendChild(remLbl);conSec.appendChild(remInput);conSec.appendChild(conBtn);conSec.appendChild(disBtn);
+
+    /* Network info */
+    const netSec=sbSection('NETWORK');
+    const netBox=document.createElement('div');
+    netBox.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.2);padding:10px;font-size:9px;color:#0a0;letter-spacing:1px;line-height:1.8;';
+    netBox.innerHTML='SIGNALING: PEERJS CLOUD<br>ICE: GOOGLE STUN<br>TRANSPORT: WEBRTC DATA CHANNEL<br>MODE: TEXT ONLY';
+    netSec.appendChild(netBox);
+
+    sbScroll.appendChild(idSec);sbScroll.appendChild(divider());sbScroll.appendChild(conSec);sbScroll.appendChild(divider());sbScroll.appendChild(netSec);
+    sb.appendChild(sbScroll);
+
+    /* ── MAIN ── */
+    const main=document.createElement('main');
+    main.style.cssText='display:flex;flex-direction:column;overflow:hidden;position:relative;background:#020202;';
+
+    /* chat area */
+    const chatArea=document.createElement('div');
+    chatArea.style.cssText='flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;';
+
+    /* corner brackets */
+    [['top:8px;left:8px;border-top:1px solid #0f0;border-left:1px solid #0f0;',],
+     ['top:8px;right:8px;border-top:1px solid #0f0;border-right:1px solid #0f0;'],
+     ['bottom:8px;left:8px;border-bottom:1px solid #0f0;border-left:1px solid #0f0;'],
+     ['bottom:8px;right:8px;border-bottom:1px solid #0f0;border-right:1px solid #0f0;']
+    ].forEach(([s])=>{const c=document.createElement('div');c.style.cssText='position:absolute;width:16px;height:16px;z-index:2;pointer-events:none;'+s;chatArea.appendChild(c);});
+
+    const idle=document.createElement('div');idle.id='rtc-idle';
+    idle.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#0a0;text-align:center;z-index:2;flex:1;';
+    idle.innerHTML='<div style="width:72px;height:72px;border:1px solid rgba(0,255,0,0.2);display:flex;align-items:center;justify-content:center;font-size:28px;background:#050505;">💬</div><div style="font-size:14px;letter-spacing:4px;color:rgba(0,255,0,0.3);">NO ACTIVE SESSION</div><div style="font-size:10px;letter-spacing:2px;opacity:0.5;">ENTER PEER ID TO ESTABLISH DATA LINK</div>';
+
+    const msgs=document.createElement('div');msgs.id='rtc-msgs';
+    msgs.style.cssText='flex:1;overflow-y:auto;padding:20px 16px;display:none;flex-direction:column;gap:10px;scrollbar-width:thin;z-index:2;';
+
+    chatArea.appendChild(idle);chatArea.appendChild(msgs);
+
+    /* input bar */
+    const inputBar=document.createElement('div');
+    inputBar.style.cssText='border-top:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;gap:6px;padding:12px 14px;align-items:center;';
+    const msgInput=document.createElement('input');msgInput.type='text';msgInput.id='rtc-chatInput';msgInput.placeholder='TYPE MESSAGE...';
+    msgInput.style.cssText='flex:1;background:#050505;border:1px solid rgba(0,255,0,0.2);padding:8px 10px;color:#0f0;font-family:monospace;font-size:12px;outline:none;';
+    msgInput.onfocus=()=>msgInput.style.borderColor='#0f0';
+    msgInput.onblur=()=>msgInput.style.borderColor='rgba(0,255,0,0.2)';
+    msgInput.onkeydown=e=>{if(e.key==='Enter')_sendMsg();};
+    const sendBtn=document.createElement('button');sendBtn.id='rtc-sendBtn';sendBtn.textContent='SEND';sendBtn.disabled=true;
+    sendBtn.style.cssText='background:transparent;color:#0f0;border:1px solid #0f0;font-family:monospace;font-size:12px;padding:8px 14px;letter-spacing:2px;cursor:pointer;';
+    sendBtn.onmouseover=()=>{if(!sendBtn.disabled){sendBtn.style.background='#0f0';sendBtn.style.color='#000';}};
+    sendBtn.onmouseout=()=>{sendBtn.style.background='transparent';sendBtn.style.color='#0f0';};
+    sendBtn.onclick=_sendMsg;
+    inputBar.appendChild(msgInput);inputBar.appendChild(sendBtn);
+
+    /* log bar */
+    const logEl=document.createElement('div');logEl.id='rtc-log';
+    logEl.style.cssText='font-size:10px;color:#0a0;padding:6px 12px;max-height:48px;overflow-y:auto;border-top:1px solid rgba(0,255,0,0.2);letter-spacing:1px;line-height:1.8;background:#000;';
+
+    main.appendChild(chatArea);main.appendChild(inputBar);main.appendChild(logEl);
+
+    page.appendChild(hdr);page.appendChild(sb);page.appendChild(main);
+    document.body.appendChild(page);
+
+    /* ── toast ── */
+    const toastEl=document.createElement('div');toastEl.id='rtc-toast';
+    toastEl.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:#111;border:1px solid #0f0;padding:10px 20px;font-family:monospace;font-size:11px;color:#0f0;z-index:9999;transition:transform 0.25s ease;pointer-events:none;white-space:nowrap;letter-spacing:2px;box-shadow:0 0 20px rgba(0,255,0,0.15);';
+    document.body.appendChild(toastEl);
+
+    /* ── helper fns ── */
+    let _toastTimer;
+    function _toast(msg){
+      toastEl.textContent='> '+msg;toastEl.style.transform='translateX(-50%) translateY(0)';
+      clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>toastEl.style.transform='translateX(-50%) translateY(60px)',2800);
+    }
+    function _log(msg,type){
+      const sp=document.createElement('span');
+      sp.style.color=type==='ok'?'#0f0':type==='err'?'#f55':type==='warn'?'#fa0':'rgba(0,170,0,0.6)';
+      sp.textContent='['+new Date().toLocaleTimeString()+'] '+msg+'  ';
+      logEl.appendChild(sp);logEl.scrollTop=logEl.scrollHeight;
+    }
+    function _setSig(state){
+      const dot=document.getElementById('rtc-sigDot');const txt=document.getElementById('rtc-sigText');
+      if(!dot)return;
+      const map={ok:'background:#0f0;box-shadow:0 0 6px #0f0;',err:'background:#f55;box-shadow:0 0 6px #f55;',connecting:'background:#fa0;box-shadow:0 0 6px #fa0;animation:rtc-blink 0.8s infinite;'};
+      dot.style.cssText='width:7px;height:7px;border-radius:50%;transition:all 0.3s;'+(map[state]||'background:#333;');
+      txt.textContent=state==='ok'?'SIGNAL OK':state==='err'?'NO SIGNAL':'SIGNAL...';
+    }
+    function _setSt(state){
+      const dot=document.getElementById('rtc-stDot');const txt=document.getElementById('rtc-stText');
+      if(!dot)return;
+      const map={online:'background:#0f0;box-shadow:0 0 6px #0f0;',connected:'background:#0f0;box-shadow:0 0 6px #0f0;animation:rtc-blink 1.5s infinite;',offline:'background:#333;'};
+      dot.style.cssText='width:7px;height:7px;border-radius:50%;transition:all 0.3s;'+(map[state]||'background:#333;');
+      txt.textContent=state==='online'?'ONLINE':state==='connected'?'CONNECTED':'OFFLINE';
+    }
+    function _refreshBtn(){
+      const has=document.getElementById('rtc-remoteId').value.trim().length>0;
+      const p=window._rtcPeer;
+      const ready=p&&!p.disconnected&&!p.destroyed;
+      const btn=document.getElementById('rtc-conBtn');
+      if(btn)btn.disabled=!has||!ready||!!window._rtcConn;
+    }
+    function _copyId(){
+      const id=document.getElementById('rtc-myId').textContent;
+      navigator.clipboard.writeText(id).then(()=>_toast('PEER ID COPIED')).catch(()=>{
+        const ta=document.createElement('textarea');ta.value=id;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);_toast('PEER ID COPIED');
+      });
+    }
+    function _escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function _addMsg(text,who){
+      const msgsEl=document.getElementById('rtc-msgs');if(!msgsEl)return;
+      const d=document.createElement('div');
+      d.style.cssText='display:flex;flex-direction:column;gap:3px;max-width:70%;animation:rtc-msgIn 0.15s ease;'+(who==='me'?'align-self:flex-end;align-items:flex-end;':'align-self:flex-start;align-items:flex-start;');
+      const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      const bubble=document.createElement('div');
+      bubble.style.cssText='padding:10px 14px;font-family:monospace;font-size:12px;line-height:1.6;border:1px solid '+(who==='me'?'rgba(0,255,0,0.3);background:rgba(0,255,0,0.08);color:#0f0;':'rgba(0,255,0,0.2);background:#050505;color:#0a0;');
+      bubble.textContent=text;
+      const meta=document.createElement('div');meta.style.cssText='font-size:9px;color:rgba(0,170,0,0.5);letter-spacing:1px;';meta.textContent=(who==='me'?'YOU':'PEER')+' · '+t;
+      d.appendChild(bubble);d.appendChild(meta);msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;
+    }
+    function _showChat(){
+      const idle=document.getElementById('rtc-idle');const m=document.getElementById('rtc-msgs');
+      if(idle)idle.style.display='none';if(m){m.style.display='flex';}
+    }
+    function _setupConn(conn){
+      window._rtcConn=conn;
+      conn.on('open',()=>{
+        _log('DATA CHANNEL OPEN · LINKED TO '+conn.peer,'ok');_toast('CONNECTED TO '+conn.peer);
+        _setSt('connected');_showChat();
+        const sb=document.getElementById('rtc-sendBtn');if(sb)sb.disabled=false;
+        const cb=document.getElementById('rtc-conBtn');if(cb)cb.style.display='none';
+        const db=document.getElementById('rtc-disBtn');if(db)db.style.display='flex';
+        _refreshBtn();
+      });
+      conn.on('data',data=>{
+        try{const msg=typeof data==='string'?JSON.parse(data):data;if(msg.type==='chat')_addMsg(msg.text,'them');}
+        catch{_addMsg(String(data),'them');}
+      });
+      conn.on('close',()=>{_log('DATA CHANNEL CLOSED','warn');_toast('PEER DISCONNECTED');_handleDisc();});
+      conn.on('error',e=>{_log('DATA ERROR: '+e.message,'err');_handleDisc();});
+    }
+    function _handleDisc(){
+      window._rtcConn=null;_setSt('online');
+      const sb=document.getElementById('rtc-sendBtn');if(sb)sb.disabled=true;
+      const cb=document.getElementById('rtc-conBtn');if(cb)cb.style.display='flex';
+      const db=document.getElementById('rtc-disBtn');if(db)db.style.display='none';
+      _refreshBtn();
+    }
+    function _connectChat(){
+      const rid=document.getElementById('rtc-remoteId').value.trim();
+      if(!rid){_toast('ENTER A PEER ID');return;}
+      const p=window._rtcPeer;if(!p||p.disconnected){_toast('SIGNALING NOT CONNECTED');return;}
+      _log('CONNECTING TO '+rid+'...');
+      const conn=p.connect(rid,{reliable:true});
+      _setupConn(conn);_toast('CONNECTING TO '+rid+'...');
+    }
+    function _disconnectChat(){
+      if(window._rtcConn){window._rtcConn.close();window._rtcConn=null;}
+      _handleDisc();_log('DISCONNECTED BY USER','warn');_toast('DISCONNECTED');
+    }
+    function _sendMsg(){
+      const inp=document.getElementById('rtc-chatInput');if(!inp)return;
+      const text=inp.value.trim();if(!text)return;
+      const c=window._rtcConn;if(!c||!c.open){_toast('NOT CONNECTED');return;}
+      c.send(JSON.stringify({type:'chat',text}));_addMsg(text,'me');inp.value='';
+    }
+
+    /* inject keyframe styles */
+    if(!document.getElementById('rtc-styles')){
+      const st=document.createElement('style');st.id='rtc-styles';
+      st.textContent='@keyframes rtc-blink{0%,100%{opacity:1;}50%{opacity:0.3;}}@keyframes rtc-msgIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}';
+      document.head.appendChild(st);
+    }
+
+    /* ── init PeerJS ── */
+    window._rtcConn=null;
+    _setSig('connecting');_setSt('offline');
+
+    const peer=new Peer(undefined,{debug:0});
+    window._rtcPeer=peer;
+
+    peer.on('open',id=>{
+      const el=document.getElementById('rtc-myId');if(el)el.textContent=id;
+      _setSig('ok');_setSt('online');_log('NODE INITIALIZED · ID: '+id,'ok');_refreshBtn();
+    });
+    peer.on('error',err=>{
+      _log('PEER ERROR: '+err.type,'err');_setSig('err');
+      if(['server-error','socket-error','socket-closed','network'].includes(err.type)){
+        _setSig('connecting');setTimeout(()=>{if(window._rtcPeer===peer)peer.reconnect();},4000);
+      }
+    });
+    peer.on('disconnected',()=>{
+      _setSig('err');_log('SIGNALING DISCONNECTED — RECONNECTING...','warn');
+      if(window._rtcPeer===peer)peer.reconnect();
+    });
+    peer.on('connection',conn=>{
+      _log('INCOMING CHAT FROM '+conn.peer,'warn');_toast('INCOMING MESSAGE FROM '+conn.peer);
+      _setupConn(conn);
+      const ri=document.getElementById('rtc-remoteId');if(ri)ri.value=conn.peer;
+      _refreshBtn();
+    });
+  }
+
+  /* load PeerJS if needed, then init */
+  const isTerminal=bindEscIfTerminal(goBack);
+  function _initRTCWrapped(){ _initRTC(isTerminal); }
+  if(typeof Peer==='undefined'){
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+    s.onload=_initRTCWrapped;
+    s.onerror=()=>{
+      clearBody();
+      const err=document.createElement('div');
+      err.style.cssText='position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:monospace;z-index:5;';
+      err.innerHTML='<div style="color:#f55;font-size:14px;letter-spacing:4px;">PEERJS LOAD FAILED</div><div style="color:#0a0;font-size:11px;">Check your internet connection.</div>';
+      if(!isTerminal){const b=document.createElement('button');b.textContent='[ EXIT ]';b.style.cssText='margin-top:10px;background:#000;color:#f55;border:1px solid rgba(255,85,85,0.5);font-family:monospace;font-size:13px;padding:8px 20px;cursor:pointer;letter-spacing:2px;';b.onclick=goBack;err.appendChild(b);}
+      document.body.appendChild(err);
+    };
+    document.head.appendChild(s);
+  } else {
+    _initRTCWrapped();
+  }
+}
+
 function showMenu(){
   clearBody();
   window._termPrint = null;
@@ -942,17 +1275,21 @@ function showMenu(){
     ["Calculator",    ()=>launchCalculator(showMenu)],
     ["File Explorer", ()=>launchExplorer("C:\\Users\\anonymous",showMenu)],
     ["Music Player",   ()=>launchMusicPlayer(showMenu)],
+    ["WebRTC",         ()=>showWebRTC(showMenu)],
+    ["Games",          showGames],
   ];
 
   apps.forEach(([l,f])=>{
     const b=document.createElement("button");b.textContent=l;b.onclick=f;grid.appendChild(b);
   });
 
-  const gamesBtn=document.createElement("button");
-  gamesBtn.textContent="Games";
-  gamesBtn.onclick=showGames;
-  gamesBtn.style.gridColumn="span 2";
-  grid.appendChild(gamesBtn);
+  // Small ambience toggle in bottom-right corner, only visible on this menu
+  const amb=document.createElement("button");
+  const updateAmbBtn=()=>{ amb.textContent=(window._ambience&&window._ambience.isOn())?"◈ AMBIENCE":"○ AMBIENCE"; amb.style.color=(window._ambience&&window._ambience.isOn())?"rgba(0,255,0,0.8)":"rgba(0,255,0,0.3)"; amb.style.borderColor=(window._ambience&&window._ambience.isOn())?"rgba(0,255,0,0.5)":"rgba(0,255,0,0.15)"; };
+  amb.style.cssText="position:fixed;bottom:10px;right:10px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid;font-family:monospace;font-size:10px;padding:4px 8px;cursor:pointer;letter-spacing:1px;";
+  updateAmbBtn();
+  amb.onclick=()=>{ if(window._ambience){ window._ambience.toggle(); updateAmbBtn(); } };
+  document.body.appendChild(amb);
 
   page.appendChild(grid);
   document.body.appendChild(page);
@@ -2593,6 +2930,7 @@ function launchExplorer(startPath,goBack){
                 "ascii.exe":      ()=>showASCII(returnToExplorer),
                 "hacker.exe":     ()=>showHackerTyper(returnToExplorer),
                 "music.exe":      ()=>launchMusicPlayer(returnToExplorer),
+                "webrtc.exe":     ()=>showWebRTC(returnToExplorer),
                 "pong.exe":       ()=>launchPong(returnToExplorer),
                 "tetris.exe":     ()=>launchTetris(returnToExplorer),
                 "minesweeper.exe":()=>launchMinesweeper(returnToExplorer),
@@ -2643,7 +2981,7 @@ const fs={
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
       "taskmgr.exe":"(executable)",
-      "readme.txt":"Data OS 9.1.1 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  urlloader.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "readme.txt":"Data OS 10.0.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  urlloader.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -2674,7 +3012,8 @@ const fs={
       "pixelart.exe":"(executable)",
       "ascii.exe":"(executable)",
       "hacker.exe":"(executable)",
-      "music.exe":"(executable)"
+      "music.exe":"(executable)",
+      "webrtc.exe":"(executable)"
     },
     "C:\\Program Files":{
       "Google":{},
@@ -2721,6 +3060,7 @@ function canonicalizePath(path){
     "ascii.exe":     ()=>showASCII(showMenu),
     "hacker.exe":    ()=>showHackerTyper(showMenu),
     "music.exe":     ()=>launchMusicPlayer(showMenu),
+    "webrtc.exe":    ()=>showWebRTC(showMenu),
     "pong.exe":      ()=>launchPong(showMenu),
     "tetris.exe":    ()=>launchTetris(showMenu),
     "minesweeper.exe":()=>launchMinesweeper(showMenu),
@@ -2783,6 +3123,7 @@ function showTerminal(goBack){
     "ascii.exe":"C:\\Users\\anonymous\\Apps",
     "hacker.exe":"C:\\Users\\anonymous\\Apps",
     "music.exe":"C:\\Users\\anonymous\\Apps",
+    "webrtc.exe":"C:\\Users\\anonymous\\Apps",
     "chrome.exe":"C:\\Program Files\\Google\\Chrome",
     "cmd.exe":null,
     "EZ-Mode.html":null,
@@ -2805,6 +3146,7 @@ function showTerminal(goBack){
     "ascii.exe":()=>{print("Opening ASCII Art Maker...");setTimeout(()=>showASCII(showTerminal),100);},
     "hacker.exe":()=>{print("Opening Hacker Typer...");setTimeout(()=>showHackerTyper(showTerminal),100);},
     "music.exe":()=>{print("Opening Music Player... ESC to exit.");setTimeout(()=>launchMusicPlayer(showTerminal),100);},
+    "webrtc.exe":()=>{print("Opening WebRTC... ESC to exit.");setTimeout(()=>showWebRTC(showTerminal),100);},
 
     "EZ-Mode.html":()=>{print("Launching EZ-Mode...");setTimeout(()=>showMenu(),300);},
   };
@@ -3027,7 +3369,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 9.1.1]");
+        print("Data OS Terminal [Version 10.0.0]");
         print("");
         break;
 
@@ -3050,7 +3392,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                9.1.1 Build 19246");
+        print("OS Version:                10.0.0 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -3120,31 +3462,32 @@ function showTerminal(goBack){
 
       case"help":{
         const helpDocs={
-          "cls":      "CLS\n\nClears the terminal screen.\n\nUsage: cls",
-          "dir":      "DIR [path]\n\nLists the contents of a directory.\n\nUsage: dir\n       dir Documents",
-          "cd":       "CD [path]\n\nChanges the current directory.\n\nUsage: cd Documents\n       cd ..\n       cd C:\\Users\\anonymous",
-          "md":       "MD [name]\n\nCreates a new directory.\n\nUsage: md myfolder",
-          "rd":       "RD [name]\n\nRemoves an empty directory.\n\nUsage: rd myfolder",
-          "del":      "DEL [file]\n\nDeletes a file.\n\nUsage: del notes.txt",
-          "type":     "TYPE [file]\n\nDisplays the contents of a text file.\n\nUsage: type notes.txt",
-          "copy":     "COPY [source] [destination]\n\nCopies a file.\n\nUsage: copy notes.txt backup.txt",
-          "move":     "MOVE [source] [destination]\n\nMoves a file.\n\nUsage: move notes.txt Documents\\notes.txt",
-          "ren":      "REN [oldname] [newname]\n\nRenames a file.\n\nUsage: ren notes.txt mynotes.txt",
-          "echo":     "ECHO [text]\n\nPrints text to the screen.\n\nUsage: echo Hello World",
-          "run":      "RUN [program]\n\nRuns an executable.\n\nUsage: run calc.exe",
-          "ver":      "VER\n\nDisplays the terminal version.",
-          "date":     "DATE\n\nDisplays the current date.",
-          "time":     "TIME\n\nDisplays the current time.",
-          "whoami":   "WHOAMI\n\nDisplays the current user.",
-          "hostname": "HOSTNAME\n\nDisplays the computer name.",
-          "systeminfo":"SYSTEMINFO\n\nDisplays system information.",
-          "tasklist": "TASKLIST\n\nLists running processes.",
-          "ipconfig": "IPCONFIG\n\nDisplays network configuration.",
-          "ping":     "PING [host]\n\nPings a host.\n\nUsage: ping google.com",
-          "set":      "SET\n\nDisplays environment variables.",
-          "help":     "HELP [command]\n\nDisplays help.\n\nUsage: help dir",
-          "ez-mode":  "EZ-MODE\n\nOpens EZ-Mode.",
-        };
+  "ambience": "AMBIENCE [on|off|status]\n\nControls background matrix rain and audio ambience.\n\nUsage:\n  ambience        - Toggle on/off\n  ambience on     - Start ambience\n  ambience off    - Stop ambience\n  ambience status - Show current state",
+  "cd":       "CD [path]\n\nChanges the current directory.\n\nUsage: cd Documents\n       cd ..\n       cd C:\\Users\\anonymous",
+  "cls":      "CLS\n\nClears the terminal screen.\n\nUsage: cls",
+  "copy":     "COPY [source] [destination]\n\nCopies a file.\n\nUsage: copy notes.txt backup.txt",
+  "date":     "DATE\n\nDisplays the current date.",
+  "del":      "DEL [file]\n\nDeletes a file.\n\nUsage: del notes.txt",
+  "dir":      "DIR [path]\n\nLists the contents of a directory.\n\nUsage: dir\n       dir Documents",
+  "echo":     "ECHO [text]\n\nPrints text to the screen.\n\nUsage: echo Hello World",
+  "ez-mode":  "EZ-MODE\n\nOpens EZ-Mode.",
+  "help":     "HELP [command]\n\nDisplays help.\n\nUsage: help dir",
+  "hostname": "HOSTNAME\n\nDisplays the computer name.",
+  "ipconfig": "IPCONFIG\n\nDisplays network configuration.",
+  "md":       "MD [name]\n\nCreates a new directory.\n\nUsage: md myfolder",
+  "move":     "MOVE [source] [destination]\n\nMoves a file.\n\nUsage: move notes.txt Documents\\notes.txt",
+  "ping":     "PING [host]\n\nPings a host.\n\nUsage: ping google.com",
+  "rd":       "RD [name]\n\nRemoves an empty directory.\n\nUsage: rd myfolder",
+  "ren":      "REN [oldname] [newname]\n\nRenames a file.\n\nUsage: ren notes.txt mynotes.txt",
+  "run":      "RUN [program]\n\nRuns an executable.\n\nUsage: run calc.exe",
+  "set":      "SET\n\nDisplays environment variables.",
+  "systeminfo":"SYSTEMINFO\n\nDisplays system information.",
+  "tasklist": "TASKLIST\n\nLists running processes.",
+  "time":     "TIME\n\nDisplays the current time.",
+  "type":     "TYPE [file]\n\nDisplays the contents of a text file.\n\nUsage: type notes.txt",
+  "ver":      "VER\n\nDisplays the terminal version.",
+  "whoami":   "WHOAMI\n\nDisplays the current user.",
+};
         if(args[0]){
           const key=args[0].toLowerCase().replace(/\.exe$/,"");
           if(helpDocs[key]){print(helpDocs[key]);}
@@ -3155,7 +3498,7 @@ function showTerminal(goBack){
           const cols=["CLS","CD / CHDIR","COPY","DATE","DEL / ERASE","DIR",
                       "ECHO","HELP","HOSTNAME","IPCONFIG","MD / MKDIR","EZ-MODE",
                       "MOVE","PATH","PING","RD / RMDIR","REN / RENAME","RUN / START",
-                      "SET","SYSTEMINFO","TASKLIST","TIME","TYPE","VER","WHOAMI"];
+                      "SET","SYSTEMINFO","TASKLIST","TIME","TYPE","VER","WHOAMI","AMBIENCE"];
           cols.forEach(c=>print("  "+c));
         }
         break;}
@@ -3165,6 +3508,25 @@ function showTerminal(goBack){
       case"ez mode":
         showMenu();
         break;
+
+      case"ambience":
+      case"ambiance":{
+        const sub=args[0]?args[0].toLowerCase():"";
+        if(!window._ambience){print("Ambience system not available.","#f55");break;}
+        if(sub==="on"||sub==="start"){
+          if(window._ambience.isOn()){print("Ambience is already running.");}
+          else{window._ambience.start();print("Ambience started. ◈");}
+        } else if(sub==="off"||sub==="stop"){
+          if(!window._ambience.isOn()){print("Ambience is already off.");}
+          else{window._ambience.stop();print("Ambience stopped.");}
+        } else if(sub==="status"){
+          print("Ambience: "+(window._ambience.isOn()?"ON ◈":"OFF ○"));
+        } else {
+          window._ambience.toggle();
+          print("Ambience "+(window._ambience.isOn()?"started. ◈":"stopped."));
+        }
+        break;
+      }
 
       default:
         {
@@ -3200,7 +3562,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 9.1.1`);
+  print(`DATA OS 10.0.0`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
@@ -3869,6 +4231,187 @@ function showInspect(){
 
 // Boot into startup screen
 showStartup();
+</script>
+
+<!-- ═══════════════ BACKGROUND AMBIENCE ═══════════════ -->
+<canvas id="bgAmbience"></canvas>
+
+<script>
+(function(){
+  /* ── Matrix Rain Canvas ── */
+  const canvas = document.getElementById('bgAmbience');
+  const ctx = canvas.getContext('2d');
+  let cols, drops, animId;
+  const FONT_SIZE = 14;
+  const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ01アBC#$%XYZΔΨΩ∑∏√∞';
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / FONT_SIZE);
+    drops = Array.from({length: cols}, () => Math.random() * -50);
+  }
+
+  function drawMatrix(){
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = FONT_SIZE + 'px monospace';
+    for(let i = 0; i < cols; i++){
+      const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+      const brightness = Math.random() > 0.95 ? '255' : '140';
+      ctx.fillStyle = `rgb(0,${brightness},0)`;
+      ctx.fillText(char, i * FONT_SIZE, drops[i] * FONT_SIZE);
+      if(drops[i] * FONT_SIZE > canvas.height && Math.random() > 0.975){
+        drops[i] = 0;
+      }
+      drops[i] += 0.4 + Math.random() * 0.3;
+    }
+    animId = requestAnimationFrame(drawMatrix);
+  }
+
+  /* ── Ambient Audio (Web Audio API) ── */
+  let audioCtx, masterGain, audioRunning = false, lfoIntervals = [];
+
+  function buildAudio(){
+    if(audioRunning) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.55, audioCtx.currentTime + 4);
+      masterGain.connect(audioCtx.destination);
+
+      // ── Utility: brown noise source ──
+      function makeBrownNoise(dur){
+        const len = audioCtx.sampleRate * dur;
+        const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        let last = 0;
+        for(let i = 0; i < len; i++){
+          const w = (Math.random()*2-1) * 0.05;
+          last = (last + w) * 0.998;
+          d[i] = last;
+        }
+        // normalise
+        let peak = 0; for(let i=0;i<len;i++) peak=Math.max(peak,Math.abs(d[i]));
+        for(let i=0;i<len;i++) d[i]/=peak;
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf; src.loop = true; return src;
+      }
+
+      // ── Layer 1: deep filtered brown noise — the "server room" floor ──
+      const roomNoise = makeBrownNoise(4);
+      const roomLP = audioCtx.createBiquadFilter();
+      roomLP.type = 'lowpass'; roomLP.frequency.value = 180; roomLP.Q.value = 1.2;
+      const roomGain = audioCtx.createGain(); roomGain.gain.value = 0.35;
+      roomNoise.connect(roomLP); roomLP.connect(roomGain); roomGain.connect(masterGain);
+      roomNoise.start();
+
+      // ── Layer 2: mid-range noise band — air/ventilation texture ──
+      const airNoise = makeBrownNoise(7);
+      const airBP = audioCtx.createBiquadFilter();
+      airBP.type = 'bandpass'; airBP.frequency.value = 420; airBP.Q.value = 0.6;
+      const airGain = audioCtx.createGain(); airGain.gain.value = 0.12;
+      airNoise.connect(airBP); airBP.connect(airGain); airGain.connect(masterGain);
+      airNoise.start();
+
+      // ── Layer 3: delay feedback loop — creates that deep reverb wash ──
+      function makeDelayWash(freq, delayTime, feedback, vol){
+        const osc = audioCtx.createOscillator();
+        const delay = audioCtx.createDelay(4.0);
+        const fbGain = audioCtx.createGain();
+        const g = audioCtx.createGain();
+        const lp = audioCtx.createBiquadFilter();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        delay.delayTime.value = delayTime;
+        fbGain.gain.value = feedback;   // high feedback = long wash
+        lp.type = 'lowpass'; lp.frequency.value = 600; lp.Q.value = 0.5;
+        g.gain.value = vol;
+
+        // LFO wobbles the pitch very slowly
+        const lfo = audioCtx.createOscillator();
+        const lfoG = audioCtx.createGain();
+        lfo.frequency.value = 0.05 + Math.random()*0.04;
+        lfoG.gain.value = 0.8 + Math.random()*1.5;
+        lfo.connect(lfoG); lfoG.connect(osc.frequency);
+
+        osc.connect(g);
+        g.connect(delay);
+        delay.connect(lp);
+        lp.connect(fbGain);
+        fbGain.connect(delay); // feedback loop
+        lp.connect(masterGain);
+
+        osc.start(); lfo.start();
+      }
+
+      makeDelayWash(55,  1.8, 0.72, 0.18);
+      makeDelayWash(82,  2.3, 0.68, 0.12);
+      makeDelayWash(110, 1.1, 0.65, 0.08);
+
+      // ── Layer 4: single very slow breath on master ──
+      const breathLfo = audioCtx.createOscillator();
+      const breathG = audioCtx.createGain();
+      breathLfo.type = 'sine';
+      breathLfo.frequency.value = 0.025; // ~40s per breath
+      breathG.gain.value = 0.08;
+      breathLfo.connect(breathG);
+      breathG.connect(masterGain.gain);
+      breathLfo.start();
+
+      audioRunning = true;
+    } catch(e){}
+  }
+
+  function startAudio(){
+    if(!ambienceOn) return;
+    if(!audioRunning){
+      buildAudio();
+    } else if(audioCtx && audioCtx.state==='suspended'){
+      audioCtx.resume();
+    }
+  }
+
+  // Persistent listener — re-unlocks audio after any page navigation click
+  document.addEventListener('click', ()=>startAudio());
+  document.addEventListener('keydown', ()=>startAudio());
+
+  function stopAudio(){
+    if(!audioRunning || !audioCtx) return;
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+    setTimeout(()=>{ try{ audioCtx.close(); }catch(e){} audioCtx=null; audioRunning=false; }, 1600);
+  }
+
+  /* ── Toggle ── */
+  let ambienceOn = false; // Off by default — accessible via EZ-Mode or terminal
+
+  function startAmbience(){
+    if(ambienceOn) return;
+    resize();
+    drawMatrix();
+    startAudio();
+    canvas.style.opacity = '0.18';
+    ambienceOn = true;
+  }
+
+  function stopAmbience(){
+    if(!ambienceOn) return;
+    cancelAnimationFrame(animId);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stopAudio();
+    canvas.style.opacity = '0';
+    ambienceOn = false;
+  }
+
+  function toggleAmbience(){ ambienceOn ? stopAmbience() : startAmbience(); }
+
+  // Expose globally so menu and terminal can call them
+  window._ambience = { start: startAmbience, stop: stopAmbience, toggle: toggleAmbience, isOn: ()=>ambienceOn };
+
+  window.addEventListener('resize', ()=>{ if(ambienceOn) resize(); });
+})();
 </script>
 </body>
 </html>
