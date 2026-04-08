@@ -2087,24 +2087,78 @@ function fetchRepoFiles(fullName, el) {
     filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// loading...</div>';
     filesDiv.style.display = 'block';
 
-    fetch(\`https://api.github.com/repos/\${fullName}/contents\`)
+    fetchDirContents(fullName, '', filesDiv);
+}
+
+function fetchDirContents(fullName, path, container) {
+    const apiPath = path ? \`/\${path}\` : '';
+    fetch(\`https://api.github.com/repos/\${fullName}/contents\${apiPath}\`)
         .then(r => r.json())
         .then(files => {
-            filesDiv.innerHTML = '';
+            container.innerHTML = '';
+            // Sort: folders first, then files
+            files.sort((a,b) => {
+                if (a.type === b.type) return a.name.localeCompare(b.name);
+                return a.type === 'dir' ? -1 : 1;
+            });
             files.forEach(file => {
-                const d = document.createElement('div');
-                d.className = 'file';
-                d.innerHTML = \`
-                    <span>\${file.type === 'dir' ? '<i class="fas fa-folder" style="color:rgba(0,255,0,0.5);margin-right:6px;"></i>' : '<i class="fas fa-file-code" style="color:rgba(0,255,0,0.3);margin-right:6px;"></i>'}\${file.name}</span>
-                    <div class="file-icons">
+                const isDir = file.type === 'dir';
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'margin-bottom:2px;';
+
+                const row = document.createElement('div');
+                row.className = 'file';
+                row.style.cursor = isDir ? 'pointer' : 'default';
+
+                row.innerHTML = \`
+                    <span style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                        \${isDir
+                            ? \`<i class="fas fa-folder-closed" style="color:rgba(0,255,0,0.55);font-size:13px;transition:transform 0.15s;" data-folder-icon></i>\`
+                            : \`<i class="fas fa-file-code" style="color:rgba(0,255,0,0.3);font-size:13px;"></i>\`
+                        }
+                        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">\${file.name}</span>
+                        \${isDir ? \`<span style="font-size:9px;letter-spacing:2px;color:rgba(0,255,0,0.3);margin-left:4px;">DIR</span>\` : ''}
+                    </span>
+                    \${!isDir ? \`<div class="file-icons">
                         <a href="\${file.html_url}" target="_blank" title="View on GitHub"><i class="fab fa-github"></i></a>
                         \${file.download_url ? \`<a onclick="downloadFile('\${file.download_url}','\${file.name}')" title="Download"><i class="fas fa-download"></i></a>\` : ''}
-                    </div>
+                    </div>\` : ''}
                 \`;
-                filesDiv.appendChild(d);
+
+                wrapper.appendChild(row);
+
+                if (isDir) {
+                    const childContainer = document.createElement('div');
+                    childContainer.style.cssText = 'display:none;margin-left:18px;border-left:1px solid rgba(0,255,0,0.15);padding-left:8px;margin-top:2px;';
+                    wrapper.appendChild(childContainer);
+
+                    let loaded = false;
+                    let open = false;
+
+                    row.addEventListener('click', () => {
+                        open = !open;
+                        const icon = row.querySelector('[data-folder-icon]');
+                        if (open) {
+                            icon.className = 'fas fa-folder-open';
+                            icon.style.color = 'rgba(0,255,0,0.8)';
+                            childContainer.style.display = 'block';
+                            if (!loaded) {
+                                loaded = true;
+                                childContainer.innerHTML = '<div style="padding:6px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// loading...</div>';
+                                fetchDirContents(fullName, file.path, childContainer);
+                            }
+                        } else {
+                            icon.className = 'fas fa-folder-closed';
+                            icon.style.color = 'rgba(0,255,0,0.55)';
+                            childContainer.style.display = 'none';
+                        }
+                    });
+                }
+
+                container.appendChild(wrapper);
             });
         })
-        .catch(() => { filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading files</div>'; });
+        .catch(() => { container.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading files</div>'; });
 }
 
 function fetchUserDetails(username, el) {
