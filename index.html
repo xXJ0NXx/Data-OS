@@ -66,7 +66,18 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 .startup-btn{background:#000;color:#0f0;border:2px solid #0f0;padding:16px 48px;font-family:monospace;font-size:18px;cursor:pointer;letter-spacing:3px;}
 .startup-btn:hover{background:#0f0;color:#000;}
 
-/* URL Loader quick-links dropdown */
+/* Wiki search result */
+.wiki-result{width:100%;margin-top:10px;padding:12px 16px;background:#050505;border:1px solid rgba(0,255,0,0.3);color:#0f0;font-family:monospace;font-size:13px;line-height:1.6;box-sizing:border-box;display:none;}
+.wiki-result.visible{display:block;}
+.wiki-result-title{font-size:15px;letter-spacing:2px;margin-bottom:6px;color:#0f0;border-bottom:1px solid rgba(0,255,0,0.2);padding-bottom:4px;}
+.wiki-result-body{color:#0a0;line-height:1.7;}
+.wiki-result-link{color:#4af;cursor:pointer;font-size:11px;margin-top:8px;display:inline-block;letter-spacing:1px;}
+.wiki-result-link:hover{text-decoration:underline;}
+.wiki-result-loading{color:#0a0;letter-spacing:2px;font-size:12px;}
+.wiki-search-row{display:flex;gap:6px;width:100%;margin-top:8px;box-sizing:border-box;}
+.wiki-search-row input{flex:1;padding:8px;background:#111;color:#0f0;border:1px solid rgba(0,255,0,0.5);font-family:monospace;font-size:13px;}
+
+/* Browser quick-links dropdown */
 .ql-wrap{position:relative;display:inline-block;}
 .ql-btn{padding:8px 14px;font-size:14px;cursor:pointer;background:rgba(0,0,0,0.2);color:#0f0;border:1px solid rgba(0,255,0,0.3);font-family:monospace;margin-left:0;}
 .ql-btn:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
@@ -284,7 +295,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.0.1";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.3.0";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -397,7 +408,7 @@ window.onerror=()=>{Module.setStatus('Exception thrown, see JavaScript console')
 }
 
 
-function launchMusicPlayer(goBack){
+function launchMusicPlayer(goBack,_preloadUrl,_preloadName,_preloadExt){
   const isTerminal=bindEscIfTerminal(goBack);
   clearBody();
   const srcdoc=`<!DOCTYPE html>
@@ -406,7 +417,7 @@ function launchMusicPlayer(goBack){
 <meta charset="utf-8">
 <title>MUSIC PLAYER v1.0</title>
 <style>
-html,body{margin:0;padding:0;min-height:100%;background:#000;color:#0f0;font-family:monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;}
+html,body{margin:0;padding:0;min-height:100%;background:#000;color:#0f0;font-family:monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;}html.transparent,html.transparent body{background:transparent!important;}
 *{scrollbar-width:none;}*::-webkit-scrollbar{display:none;}
 
 .player-window{background:#0a0a0a;border:2px solid #0f0;width:420px;font-family:monospace;}
@@ -864,7 +875,7 @@ function playIdx(idx){
     playBtn.innerHTML="&#9646;&#xFE0E;&#9646;&#xFE0E;";
     statusLeft.textContent="PLAYING";
     trackTitle.textContent=t.name.toUpperCase();
-    trackMeta.textContent=formatBytes(t.file.size)+" \\xb7 "+t.file.type.replace("audio/","").toUpperCase();
+    trackMeta.textContent=t.file?formatBytes(t.file.size)+" \\xb7 "+t.file.type.replace("audio/","").toUpperCase():(t.ext?t.ext.toUpperCase()+" // REMOTE":"REMOTE");
     renderPlaylist();
     startVisualizer();
   }).catch(err=>{console.warn("Playback failed:",err);statusLeft.textContent="ERROR";});
@@ -905,14 +916,38 @@ document.addEventListener("keydown",e=>{
   if(e.code==="ArrowUp")    {volSlider.value=Math.min(100,+volSlider.value+5);volSlider.oninput();}
   if(e.code==="ArrowDown")  {volSlider.value=Math.max(0,+volSlider.value-5);volSlider.oninput();}
 });
+
+window.addEventListener("message",e=>{
+  if(e.data&&e.data.type==="load-track"){
+    const t=e.data;
+    tracks.push({name:t.name,url:t.url,ext:t.ext,file:null});
+    renderPlaylist();
+    statusRight.textContent=tracks.length+" TRACK"+(tracks.length!==1?"S":"");
+    playIdx(tracks.length-1);
+  }
+  if(e.data&&e.data.type==="transparent-bg"){
+    document.documentElement.classList.add("transparent");
+    document.body.style.background="transparent";
+  }
+});
 <\/script>
 </body>
 </html>
 `;
   const iframe=document.createElement("iframe");
   iframe.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:3;background:#000;";
+  iframe.setAttribute("allowtransparency","true");
   iframe.srcdoc=srcdoc;
+  if(_preloadUrl){iframe.style.background="transparent";iframe.style.backgroundColor="transparent";}
   document.body.appendChild(iframe);
+  iframe.addEventListener("load",()=>{
+    if(_preloadUrl){
+      try{
+        iframe.contentWindow.postMessage({type:"transparent-bg"},"*");
+        iframe.contentWindow.postMessage({type:"load-track",url:_preloadUrl,name:_preloadName||_preloadUrl.split("/").pop().replace(/\.[^.]+$/,""),ext:_preloadExt||""},"*");
+      }catch(e){}
+    }
+  });
 
   if(isTerminal){
     // Terminal: ESC already wired by bindEscIfTerminal — no visible button needed
@@ -2010,6 +2045,7 @@ function displayResults(items) {
                     <button class="action-btn" onclick="downloadRepoZip('\${item.full_name}')">
                         <i class="fas fa-file-archive"></i> ZIP
                     </button>
+                    <button class="action-btn" onclick="window.parent.runRepo('\${item.full_name}',this)">&#9654; RUN</button>
                 </div>
                 <div class="repo-stats">
                     <span class="stars-stat"><i class="fas fa-star"></i> \${item.stargazers_count.toLocaleString()}</span>
@@ -2084,32 +2120,266 @@ function parseDescription(desc) {
     return desc.replace(/(https?:\\/\\/[^\\s]+)/g, url => \`<a href="\${url}" target="_blank" style="color:var(--green)">\${url}</a>\`);
 }
 
+/* ── Inline file/image viewer modal ── */
+(function(){
+  if(document.getElementById('_repoViewerModal')) return;
+  const style = document.createElement('style');
+  style.textContent = \`
+    #_repoViewerModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;font-family:monospace;}
+    #_repoViewerModal.open{display:flex;}
+    #_rvm_header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#0a0a0a;border-bottom:1px solid rgba(0,255,0,0.25);flex-shrink:0;}
+    #_rvm_path{flex:1;color:rgba(0,255,0,0.6);font-size:11px;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #_rvm_close{background:transparent;border:1px solid rgba(255,80,80,0.35);color:#f55;font-family:monospace;font-size:11px;padding:4px 12px;cursor:pointer;letter-spacing:2px;}
+    #_rvm_close:hover{background:rgba(255,80,80,0.1);border-color:#f55;}
+    #_rvm_dl{background:transparent;border:1px solid rgba(0,255,0,0.3);color:#0f0;font-family:monospace;font-size:11px;padding:4px 12px;cursor:pointer;letter-spacing:2px;text-decoration:none;}
+    #_rvm_dl:hover{background:rgba(0,255,0,0.1);}
+    #_rvm_body{flex:1;overflow:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start;scrollbar-width:none;}
+    #_rvm_body::-webkit-scrollbar{display:none;}
+    #_rvm_code{background:#050505;color:#0f0;padding:16px;font-size:13px;line-height:1.6;white-space:pre;tab-size:2;width:100%;box-sizing:border-box;border:1px solid rgba(0,255,0,0.15);overflow:auto;scrollbar-width:none;}
+    #_rvm_code::-webkit-scrollbar{display:none;}
+    #_rvm_img{max-width:100%;max-height:80vh;border:1px solid rgba(0,255,0,0.2);display:block;}
+    #_rvm_binary{color:rgba(0,255,0,0.4);font-size:12px;letter-spacing:2px;padding:20px;}
+  \`;
+  document.head.appendChild(style);
+  const modal = document.createElement('div');
+  modal.id = '_repoViewerModal';
+  modal.innerHTML = \`
+    <div id="_rvm_header">
+      <span id="_rvm_path"></span>
+      <a id="_rvm_dl" style="display:none" download>&#x2193; DOWNLOAD</a>
+      <button id="_rvm_close">✕ CLOSE</button>
+    </div>
+    <div id="_rvm_body"></div>
+  \`;
+  document.body.appendChild(modal);
+  document.getElementById('_rvm_close').onclick = () => modal.classList.remove('open');
+  modal.addEventListener('keydown', e => {
+    if(e.key==='Escape') modal.classList.remove('open');
+    if((e.ctrlKey||e.metaKey)&&e.key==='a'){
+      const code = document.getElementById('_rvm_code');
+      if(code){ e.preventDefault(); const sel=window.getSelection(); const r=document.createRange(); r.selectNodeContents(code); sel.removeAllRanges(); sel.addRange(r); }
+    }
+  });
+})();
+
+function _fetchDownload(url, filename){
+  const dlBtn = document.getElementById('_rvm_dl');
+  const orig = dlBtn.textContent;
+  dlBtn.textContent = '// fetching...';
+  dlBtn.style.pointerEvents = 'none';
+  fetch(url)
+    .then(r => { if(!r.ok) throw new Error(r.status); return r.blob(); })
+    .then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    })
+    .catch(err => { alert('// download failed: ' + err.message); })
+    .finally(() => { dlBtn.textContent = orig; dlBtn.style.pointerEvents = ''; });
+}
+
+function _openFileViewer(name, downloadUrl, htmlUrl) {
+  const modal = document.getElementById('_repoViewerModal');
+  const body  = document.getElementById('_rvm_body');
+  const pathEl = document.getElementById('_rvm_path');
+  const dlBtn  = document.getElementById('_rvm_dl');
+  pathEl.textContent = name;
+  body.innerHTML = '<div style="color:rgba(0,255,0,0.4);font-size:11px;letter-spacing:3px;padding:20px;">// loading file...</div>';
+  modal.classList.add('open');
+  if(downloadUrl){
+    dlBtn.style.display='inline';
+    dlBtn.removeAttribute('href');
+    dlBtn.removeAttribute('download');
+    const _dlFilename = name.split('/').pop();
+    dlBtn.onclick = (ev) => { ev.preventDefault(); _fetchDownload(downloadUrl, _dlFilename); };
+  } else { dlBtn.style.display='none'; }
+
+  const ext = name.split('.').pop().toLowerCase();
+  const imgExts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico','avif'];
+  const audioExts = ['mp3','wav','ogg','flac','aac','m4a','opus','weba'];
+  const videoExts = ['mp4','webm','ogv','mov','avi','mkv','m4v'];
+  const codeExts = ['js','ts','jsx','tsx','py','rb','java','c','cpp','cs','go','rs','php','sh','bash','zsh','html','htm','css','scss','sass','json','yaml','yml','toml','xml','md','txt','env','gitignore','dockerfile','makefile','sql','r','swift','kt','vue','svelte','lua','pl','ex','exs','hs','ml','clj','dart','zig'];
+
+  if(imgExts.includes(ext)){
+    body.innerHTML = \`<img id="_rvm_img" src="\${downloadUrl||htmlUrl}" alt="\${name}">\`;
+    return;
+  }
+  if(audioExts.includes(ext)){
+    const src = downloadUrl || htmlUrl;
+    const fname = name.split('/').pop();
+    // Show download button in modal but don't use href — fetch→blob instead
+    if(downloadUrl){
+      dlBtn.style.display='inline';
+      dlBtn.removeAttribute('href');
+      dlBtn.removeAttribute('download');
+      dlBtn.onclick=(ev)=>{ ev.preventDefault(); _fetchDownload(downloadUrl, fname); };
+    } else { dlBtn.style.display='none'; }
+    // Keep modal open briefly to show download btn, then send to music player
+    body.innerHTML = '<div style="color:rgba(0,255,0,0.5);font-size:11px;letter-spacing:3px;padding:20px;">// opening in music player...</div>';
+    try{ window.parent.postMessage({type:'play-audio',url:src,name:fname.replace(/\.[^.]+$/,''),ext:ext},'*'); }catch(e){}
+    return;
+  }
+  if(videoExts.includes(ext)){
+    const src = downloadUrl || htmlUrl;
+    body.innerHTML = \`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;width:100%;box-sizing:border-box;"><div style="color:rgba(0,255,0,0.5);font-size:11px;letter-spacing:3px;margin-bottom:4px;">// \${name.split('/').pop()}</div><video controls style="max-width:100%;max-height:70vh;border:1px solid rgba(0,255,0,0.25);" src="\${src}">Your browser does not support video playback.</video></div>\`;
+    return;
+  }
+  if(!downloadUrl){ body.innerHTML = \`<div id="_rvm_binary">// binary or no download available — <a href="\${htmlUrl}" target="_blank" style="color:#0f0;">view on GitHub ↗</a></div>\`; return; }
+
+  fetch(downloadUrl)
+    .then(r => { if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(text => {
+      const pre = document.createElement('pre');
+      pre.id = '_rvm_code';
+      pre.textContent = text;
+      body.innerHTML = '';
+      body.appendChild(pre);
+    })
+    .catch(() => {
+      body.innerHTML = \`<div id="_rvm_binary">// could not load file — <a href="\${htmlUrl}" target="_blank" style="color:#0f0;">view on GitHub ↗</a></div>\`;
+    });
+}
+
 function fetchRepoFiles(fullName, el) {
     const filesDiv = el.closest('.repo').querySelector('.files');
     if (filesDiv.style.display === 'block') { filesDiv.style.display = 'none'; return; }
-    if (filesDiv.innerHTML) { filesDiv.style.display = 'block'; return; }
 
-    filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// loading...</div>';
+    // If already loaded root, just show it
+    if (filesDiv.dataset.loaded === 'root') { filesDiv.style.display = 'block'; return; }
+
+    filesDiv.dataset.loaded = 'root';
     filesDiv.style.display = 'block';
+    _renderDirInto(filesDiv, fullName, '', fullName);
+}
 
-    fetch(\`https://api.github.com/repos/\${fullName}/contents\`)
+function _renderDirInto(container, fullName, path, repoLabel) {
+    container.innerHTML = '<div style="padding:8px;font-size:10px;letter-spacing:2px;color:rgba(0,255,0,0.4);">// loading...</div>';
+
+    const apiPath = path ? \`/\${path}\` : '';
+    fetch(\`https://api.github.com/repos/\${fullName}/contents\${apiPath}\`)
         .then(r => r.json())
         .then(files => {
-            filesDiv.innerHTML = '';
+            if (!Array.isArray(files)) throw new Error('not a directory');
+
+            // Sort: dirs first, then files alphabetically
+            files.sort((a,b) => {
+                if(a.type===b.type) return a.name.localeCompare(b.name);
+                return a.type==='dir' ? -1 : 1;
+            });
+
+            container.innerHTML = '';
+
+            // Breadcrumb / back row
+            const breadcrumb = document.createElement('div');
+            breadcrumb.style.cssText = 'padding:4px 8px 8px;font-size:10px;color:rgba(0,255,0,0.45);letter-spacing:1px;border-bottom:1px solid rgba(0,255,0,0.1);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+
+            const parts = path ? path.split('/') : [];
+            // root crumb
+            const rootCrumb = document.createElement('span');
+            rootCrumb.textContent = repoLabel.split('/')[1] || repoLabel;
+            rootCrumb.style.cssText = 'cursor:pointer;color:rgba(0,255,0,0.6);';
+            rootCrumb.title = 'Back to root';
+            rootCrumb.onclick = () => _renderDirInto(container, fullName, '', repoLabel);
+            breadcrumb.appendChild(rootCrumb);
+
+            parts.forEach((part, idx) => {
+                const sep = document.createElement('span');
+                sep.textContent = '/';
+                sep.style.color = 'rgba(0,255,0,0.2)';
+                breadcrumb.appendChild(sep);
+
+                const crumb = document.createElement('span');
+                crumb.textContent = part;
+                const crumbPath = parts.slice(0, idx+1).join('/');
+                if(idx < parts.length - 1){
+                    crumb.style.cssText = 'cursor:pointer;color:rgba(0,255,0,0.6);';
+                    crumb.onclick = () => _renderDirInto(container, fullName, crumbPath, repoLabel);
+                } else {
+                    crumb.style.color = '#0f0';
+                }
+                breadcrumb.appendChild(crumb);
+            });
+
+            container.appendChild(breadcrumb);
+
             files.forEach(file => {
                 const d = document.createElement('div');
                 d.className = 'file';
-                d.innerHTML = \`
-                    <span>\${file.type === 'dir' ? '<i class="fas fa-folder" style="color:rgba(0,255,0,0.5);margin-right:6px;"></i>' : '<i class="fas fa-file-code" style="color:rgba(0,255,0,0.3);margin-right:6px;"></i>'}\${file.name}</span>
-                    <div class="file-icons">
-                        <a href="\${file.html_url}" target="_blank" title="View on GitHub"><i class="fab fa-github"></i></a>
-                        \${file.download_url ? \`<a onclick="downloadFile('\${file.download_url}','\${file.name}')" title="Download"><i class="fas fa-download"></i></a>\` : ''}
-                    </div>
-                \`;
-                filesDiv.appendChild(d);
+                d.style.cursor = 'pointer';
+
+                const isDir = file.type === 'dir';
+                const icon = isDir
+                    ? '<i class="fas fa-folder" style="color:rgba(0,255,0,0.55);margin-right:7px;"></i>'
+                    : _fileIcon(file.name);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.innerHTML = icon + file.name;
+                nameSpan.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+                const iconsDiv = document.createElement('div');
+                iconsDiv.className = 'file-icons';
+                iconsDiv.style.flexShrink = '0';
+
+                if(isDir){
+                    // Click row to open folder
+                    d.onclick = (e) => {
+                        if(e.target.closest('a')) return;
+                        const subContainer = document.createElement('div');
+                        subContainer.style.cssText = 'border:1px solid rgba(0,255,0,0.12);margin:4px 0 4px 14px;background:#050505;';
+                        // Replace whole container with subfolder view
+                        _renderDirInto(container, fullName, file.path, repoLabel);
+                    };
+                    iconsDiv.innerHTML = \`<a href="\${file.html_url}" target="_blank" title="View on GitHub" onclick="event.stopPropagation()"><i class="fab fa-github"></i></a>\`;
+                } else {
+                    d.onclick = (e) => {
+                        if(e.target.closest('a')) return;
+                        _openFileViewer(file.path, file.download_url, file.html_url);
+                    };
+                    if(/\\.html?$/i.test(file.name) && file.download_url){
+                        const rb=document.createElement('button');
+                        rb.textContent='\u25BA RUN';
+                        rb.style.cssText='background:transparent;border:1px solid rgba(0,255,0,0.4);color:rgba(0,255,0,0.8);font-family:monospace;font-size:9px;padding:2px 7px;cursor:pointer;letter-spacing:1px;margin-right:3px;';
+                        rb.onmouseover=()=>{rb.style.borderColor='#0f0';rb.style.color='#0f0';};
+                        rb.onmouseout=()=>{rb.style.borderColor='rgba(0,255,0,0.4)';rb.style.color='rgba(0,255,0,0.8)';};
+                        const _u=file.download_url;
+                        rb.onclick=(e)=>{e.stopPropagation();window.parent.runHtmlFile(_u,rb);};
+                        iconsDiv.appendChild(rb);
+                    }
+                    const _ghLink=document.createElement('a');
+                    _ghLink.href=file.html_url; _ghLink.target='_blank'; _ghLink.title='View on GitHub';
+                    _ghLink.onclick=(e)=>e.stopPropagation();
+                    _ghLink.innerHTML='<i class="fab fa-github"></i>';
+                    iconsDiv.appendChild(_ghLink);
+                    if(file.download_url){
+                        const _dlLink=document.createElement('a');
+                        _dlLink.title='Download';
+                        _dlLink.onclick=(e)=>{e.stopPropagation();downloadFile(file.download_url,file.name);};
+                        _dlLink.innerHTML='<i class="fas fa-download"></i>';
+                        iconsDiv.appendChild(_dlLink);
+                    }
+                }
+
+                d.appendChild(nameSpan);
+                d.appendChild(iconsDiv);
+                container.appendChild(d);
             });
         })
-        .catch(() => { filesDiv.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading files</div>'; });
+        .catch(() => { container.innerHTML = '<div style="padding:8px;font-size:10px;color:rgba(255,80,80,0.6);">// error loading files</div>'; });
+}
+
+function _fileIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    const imgExts = ['png','jpg','jpeg','gif','webp','svg','bmp','ico','avif'];
+    const audioExts = ['mp3','wav','ogg','flac','aac','m4a','opus','weba'];
+    const videoExts = ['mp4','webm','ogv','mov','avi','mkv','m4v'];
+    const codeExts = ['js','ts','jsx','tsx','py','rb','java','c','cpp','cs','go','rs','php','sh','html','css','json','yaml','yml','toml','xml','md','sql','swift','kt','vue','svelte'];
+    if(imgExts.includes(ext)) return '<i class="fas fa-image" style="color:rgba(0,200,255,0.5);margin-right:7px;"></i>';
+    if(audioExts.includes(ext)) return '<i class="fas fa-music" style="color:rgba(255,180,0,0.55);margin-right:7px;"></i>';
+    if(videoExts.includes(ext)) return '<i class="fas fa-film" style="color:rgba(200,100,255,0.55);margin-right:7px;"></i>';
+    if(codeExts.includes(ext)) return '<i class="fas fa-file-code" style="color:rgba(0,255,0,0.35);margin-right:7px;"></i>';
+    return '<i class="fas fa-file" style="color:rgba(0,255,0,0.2);margin-right:7px;"></i>';
 }
 
 function fetchUserDetails(username, el) {
@@ -2265,6 +2535,14 @@ function downloadFile(url, filename) {
         window.removeEventListener("message",onGitBack);
         goBack();
       }
+      if(e.data&&e.data.type==="play-audio"){
+        window.removeEventListener("message",onGitBack);
+        // Launch music player over the gitfetch iframe, transparent bg
+        const trackUrl=e.data.url;
+        const trackName=e.data.name;
+        const trackExt=e.data.ext;
+        launchMusicPlayer(()=>showGitFetch(goBack),trackUrl,trackName,trackExt);
+      }
     });
   }
   function onEsc(e){if(e.key==="Escape"){document.removeEventListener("keydown",onEsc);goBack();}}
@@ -2283,7 +2561,7 @@ function showMenu(){
 
   const apps=[
     ["HTML Editor",   ()=>showEditor("",showMenu)],
-    ["URL Loader",    ()=>showURLPage(showMenu)],
+    ["Browser",    ()=>showURLPage(showMenu)],
     ["Base64 Tool",   ()=>showBase64(showMenu)],
     ["CPU Stress",    ()=>showStress(showMenu)],
     ["Draw / Paint",  ()=>showDraw(showMenu)],
@@ -2553,7 +2831,43 @@ function showURLPage(goBack){
   const page=document.createElement("div");page.className="url-page";
   const hdr=document.createElement("div");hdr.className="url-page-header";
   const addrInput=document.createElement("input");addrInput.type="text";addrInput.placeholder="https://...";
-  const goBtn=makeBtn("Go",()=>{const u=normalizeURL(addrInput.value);if(u)showURLMode(u,goBack);});
+  const wikiResult=document.createElement("div");wikiResult.className="wiki-result";
+  async function doWikiSearch(q){
+    wikiResult.className="wiki-result visible";
+    wikiResult.innerHTML='<span class="wiki-result-loading">[ SEARCHING... ]</span>';
+    try{
+      const res=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`);
+      if(!res.ok){
+        const srchRes=await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=1&format=json&origin=*`);
+        const srchData=await srchRes.json();
+        if(srchData[1]&&srchData[1][0]){
+          const res2=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(srchData[1][0])}`);
+          if(res2.ok){renderWiki(await res2.json());return;}
+        }
+        wikiResult.innerHTML='<span class="wiki-result-loading">[ NO RESULT FOUND ]</span>';
+        return;
+      }
+      renderWiki(await res.json());
+    }catch(e){wikiResult.innerHTML='<span class="wiki-result-loading">[ ERROR: '+e.message+' ]</span>';}
+  }
+  function renderWiki(d){
+    const title=d.title||"";
+    const desc=d.description?`<span style="color:#0f0;font-size:11px;letter-spacing:1px;">${d.description}</span><br><br>`:"";
+    const body=d.extract||"No summary available.";
+    const link=d.content_urls&&d.content_urls.desktop?d.content_urls.desktop.page:"";
+    wikiResult.innerHTML=`<div class="wiki-result-title">${title}</div><div class="wiki-result-body">${desc}${body}</div>`+(link?`<a class="wiki-result-link" href="${link}" target="_blank">[ OPEN FULL ARTICLE ↗ ]</a>`:"");
+  }
+  const goBtn=makeBtn("Go",()=>{
+    const val=addrInput.value.trim();
+    if(!val)return;
+    const u=normalizeURL(val);
+    // If it looks like a URL, load it; otherwise do a wiki search
+    if(/^https?:\/\//i.test(val)||/^[\w-]+\.[\w.-]+(\/|$)/.test(val)){
+      showURLMode(u,goBack);
+    } else {
+      doWikiSearch(val);
+    }
+  });
   addrInput.onkeydown=e=>{if(e.key==="Enter")goBtn.click();};
 
   // ── Quick-links dropdown ──
@@ -2584,6 +2898,12 @@ function showURLPage(goBack){
   const urlBtns=bindEscIfTerminal(goBack)?[addrInput,goBtn,qlWrap]:[makeBtn("Back",goBack),addrInput,goBtn,qlWrap];
   urlBtns.forEach(el=>hdr.appendChild(el));
   page.appendChild(hdr);
+
+  // ── Wiki result panel ──
+  const wikiSection=document.createElement("div");
+  wikiSection.style.cssText="width:100%;max-width:680px;margin:18px auto 0;padding:0 20px;box-sizing:border-box;";
+  wikiSection.appendChild(wikiResult);
+  page.appendChild(wikiSection);
 
   document.body.appendChild(page);
   addCopyright();
@@ -3372,6 +3692,10 @@ function makeGameWindow(title,w,h,buildFn,goBack,hideExitBtn){
     overlay.appendChild(exitBtn);
   }
   window._gameWindowStack.push(closeGame);
+  const _gsb=document.getElementById('settingsBtn');
+  const _gsp=document.getElementById('settingsPopup');
+  if(_gsb) _gsb.style.display='none';
+  if(_gsp) _gsp.style.display='none';
   document.body.appendChild(overlay);
 }
 
@@ -4029,7 +4353,7 @@ function launchExplorer(startPath,goBack){
                 "paint.exe":      ()=>showDraw(returnToExplorer),
                 "mspaint.exe":    ()=>showDraw(returnToExplorer),
                 "htmleditor.exe": ()=>showEditor("",returnToExplorer),
-                "urlloader.exe":  ()=>showURLPage(returnToExplorer),
+                "browser.exe":  ()=>showURLPage(returnToExplorer),
                 "base64.exe":     ()=>showBase64(returnToExplorer),
                 "stress.exe":     ()=>showStress(returnToExplorer),
                 "pixelart.exe":   ()=>showPixelArt(returnToExplorer),
@@ -4088,7 +4412,7 @@ const fs={
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
       "taskmgr.exe":"(executable)",
-      "readme.txt":"Data OS 10.0.1 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  urlloader.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "readme.txt":"Data OS 10.3.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -4112,7 +4436,7 @@ const fs={
     "C:\\Users\\anonymous\\Apps":{
       "calc.exe":"(executable)",
       "htmleditor.exe":"(executable)",
-      "urlloader.exe":"(executable)",
+      "browser.exe":"(executable)",
       "base64.exe":"(executable)",
       "stress.exe":"(executable)",
       "paint.exe":"(executable)",
@@ -4161,7 +4485,7 @@ function canonicalizePath(path){
     "paint.exe":     ()=>showDraw(showMenu),
     "mspaint.exe":   ()=>showDraw(showMenu),
     "htmleditor.exe":()=>showEditor("",showMenu),
-    "urlloader.exe": ()=>showURLPage(showMenu),
+    "browser.exe": ()=>showURLPage(showMenu),
     "base64.exe":    ()=>showBase64(showMenu),
     "stress.exe":    ()=>showStress(showMenu),
     "pixelart.exe":  ()=>showPixelArt(showMenu),
@@ -4235,7 +4559,7 @@ function showTerminal(goBack){
     "paint.exe":"C:\\Users\\anonymous\\Apps",
     "calc.exe":"C:\\Users\\anonymous\\Apps",
     "htmleditor.exe":"C:\\Users\\anonymous\\Apps",
-    "urlloader.exe":"C:\\Users\\anonymous\\Apps",
+    "browser.exe":"C:\\Users\\anonymous\\Apps",
     "base64.exe":"C:\\Users\\anonymous\\Apps",
     "stress.exe":"C:\\Users\\anonymous\\Apps",
     "pixelart.exe":"C:\\Users\\anonymous\\Apps",
@@ -4256,10 +4580,10 @@ function showTerminal(goBack){
     "paint.exe":()=>{print("Opening Paint...");setTimeout(()=>showDraw(showTerminal),100);},
     "explorer.exe":()=>launchExplorer("C:\\Users\\anonymous"),
     "chrome.exe":()=>{print("Google Chrome is already running.");},
-    "cmd.exe":()=>{print("Microsoft Windows [Version 10.0.19245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
+    "cmd.exe":()=>{print("Microsoft Windows [Version 10.3.09245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
     "taskmgr.exe":()=>{print("Opening Task Manager...");setTimeout(()=>showStress(showTerminal),100);},
     "htmleditor.exe":()=>{print("Opening HTML Editor...");setTimeout(()=>showEditor("",showTerminal),100);},
-    "urlloader.exe":()=>{print("Opening URL Loader...");setTimeout(()=>showURLPage(showTerminal),100);},
+    "browser.exe":()=>{print("Opening Browser...");setTimeout(()=>showURLPage(showTerminal),100);},
     "base64.exe":()=>{print("Opening Base64 Tool...");setTimeout(()=>showBase64(showTerminal),100);},
     "stress.exe":()=>{print("Opening CPU Stress Test...");setTimeout(()=>showStress(showTerminal),100);},
     "pixelart.exe":()=>{print("Opening Pixel Art Editor...");setTimeout(()=>showPixelArt(showTerminal),100);},
@@ -4490,7 +4814,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 10.0.1]");
+        print("Data OS Terminal [Version 10.3.0]");
         print("");
         break;
 
@@ -4513,7 +4837,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                10.0.1 Build 19246");
+        print("OS Version:                10.3.0 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -4702,7 +5026,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 10.0.1`);
+  print(`DATA OS 10.3.0`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
@@ -5368,6 +5692,49 @@ function showInspect(){
   buildElements();buildConsole();buildNetwork();buildPerformance();buildStorage();buildInfo();
   switchTab("Elements");
 }
+
+function runHtmlFile(url, btn) {
+    var orig = btn.textContent;
+    btn.textContent = '...';
+    btn.disabled = true;
+    fetch(url)
+        .then(function(r){ return r.text(); })
+        .then(function(text){
+            window.open(URL.createObjectURL(new Blob([text],{type:'text/html'})), '_blank');
+        })
+        .catch(function(e){ alert('Run failed: ' + e.message); })
+        .finally(function(){ btn.textContent = orig; btn.disabled = false; });
+}
+
+var _lsPolyfill = '<scr'+'ipt>(function(){var s={};Object.defineProperty(window,"localStorage",{value:{getItem:function(k){return s.hasOwnProperty(k)?s[k]:null;},setItem:function(k,v){s[k]=String(v);},removeItem:function(k){delete s[k];},clear:function(){s={};},key:function(i){return Object.keys(s)[i]||null;},get length(){return Object.keys(s).length;}},writable:false,configurable:false});}());</'+'script>';
+
+function runRepo(fullName, btn) {
+    var orig = btn.textContent;
+    btn.textContent = '...';
+    btn.disabled = true;
+    var w = window.open('', '_blank');
+    fetch('https://api.github.com/repos/' + fullName)
+        .then(function(r){ return r.json(); })
+        .then(function(repo){
+            var branch = repo.default_branch || 'main';
+            return fetch('https://api.github.com/repos/' + fullName + '/commits/' + branch);
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(commit){
+            var hash = commit.sha;
+            var BASE = 'https://raw.githack.com/' + fullName + '/' + hash + '/';
+            return fetch(BASE + 'index.html')
+                .then(function(r){ return r.text(); })
+                .then(function(text){
+                    text = text.replace(/<head([^>]*)>/i, '<head$1>' + _lsPolyfill + '<base href="' + BASE + '">');
+                    var blob = new Blob([text], {type:'text/html'});
+                    w.location.href = URL.createObjectURL(blob);
+                });
+        })
+        .catch(function(e){ w.close(); alert('Run failed: ' + e.message); })
+        .finally(function(){ btn.textContent = orig; btn.disabled = false; });
+}
+
 
 // Boot into startup screen
 showStartup();
