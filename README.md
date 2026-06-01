@@ -272,7 +272,7 @@ Jon Stearns — xXJ0NXx
 ![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-0f0?style=flat-square&logo=javascript&logoColor=0f0&labelColor=000&color=0f0)
 ![License](https://img.shields.io/badge/License-MIT-0f0?style=flat-square&labelColor=000&color=0f0)
 ![No Dependencies](https://img.shields.io/badge/Dependencies-None-0f0?style=flat-square&labelColor=000&color=0f0)
----
+
 
 
 
