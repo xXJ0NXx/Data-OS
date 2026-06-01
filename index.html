@@ -50,9 +50,28 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 .topbar.visible{top:5px;}
 .topbar input{width:320px;padding:6px;background:#222;color:#0f0;border:1px solid #0f0;font-family:monospace;}
 .hover-zone{position:fixed;top:0;left:0;width:100%;height:25px;z-index:998;}
-.url-page{position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;}
-.url-page-header{padding:20px 30px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;}
-.url-page-header input{flex:1;min-width:200px;padding:8px;background:#111;color:#0f0;border:1px solid #0f0;font-family:monospace;font-size:14px;}
+.url-page{position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;font-family:monospace;color:#0f0;}
+.url-page-hdr{display:flex;align-items:center;gap:14px;padding:0 16px;height:48px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;}
+.url-page-hdr-title{font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);}
+.url-page-hdr-sub{font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;}
+.url-page-badge{font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;}
+.url-page-hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.url-page-body{flex:1;display:flex;overflow:hidden;}
+.url-page-sidebar{width:260px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;}
+.url-page-sb-hdr{padding:10px 14px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);text-transform:uppercase;}
+.url-page-sb-scroll{flex:1;overflow-y:auto;padding:14px;}
+.url-page-sb-label{font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;}
+.url-page-sb-card{background:#050505;border:1px solid rgba(0,255,0,0.2);padding:10px 12px;margin-bottom:12px;position:relative;}
+.url-page-sb-card-top{position:absolute;top:0;left:0;right:0;height:1px;background:#0f0;box-shadow:0 0 6px #0f0;}
+.url-page-sb-divider{height:1px;background:rgba(0,255,0,0.15);margin:12px 0;}
+.url-page-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#020202;}
+.url-page-search-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;}
+.url-page-search-bar input{flex:1;background:#0d0d0d;border:1px solid rgba(0,255,0,0.2);color:#0f0;font-family:monospace;font-size:13px;padding:7px 10px;outline:none;transition:border-color 0.15s;}
+.url-page-search-bar input:focus{border-color:#0f0;}
+.url-page-results{flex:1;overflow-y:auto;padding:16px;}
+.url-page-ql-item{display:block;width:100%;padding:8px 10px;background:transparent;color:#0f0;border:none;border-bottom:1px solid rgba(0,255,0,0.07);font-family:monospace;font-size:12px;cursor:pointer;text-align:left;box-sizing:border-box;letter-spacing:1px;}
+.url-page-ql-item:hover{background:rgba(0,255,0,0.07);color:#fff;}
+.url-page-status{padding:4px 16px;min-height:24px;display:flex;align-items:center;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;}
 .b64-wrap{position:fixed;inset:0;z-index:3;}
 .b64-ta{position:absolute;inset:0;width:100%;height:100%;border:none;background:#111;color:#0f0;padding:20px;box-sizing:border-box;font-family:monospace;font-size:14px;resize:none;}
 .b64-ta.drag-over{background:#0b1a0b;box-shadow:inset 0 0 0 3px #0f0;}
@@ -243,6 +262,8 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 </head>
 <body>
 <script>
+/* ── raw source snapshot (sync XHR before any DOM mutations) ── */
+window._rawSource=(function(){try{const x=new XMLHttpRequest();x.open("GET",window.location.href,false);x.send();return x.responseText;}catch(e){return null;}})();
 /* ── helpers ── */
 function normalizeURL(url){url=url.trim();if(!url)return"";if(/^https?:\/\//i.test(url))return url;return"https://"+url;}
 function clearBody(){
@@ -258,6 +279,48 @@ function clearBody(){
 }
 function makeBtn(label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;return b;}
 function addCopyright(){const c=document.createElement("div");c.className="copyright";c.innerHTML="&copy; 2026 &mdash; Jon Stearns";document.body.appendChild(c);}
+function showFailScreen(title,subtitle,goBack,onContinue){
+  clearBody();
+  const err=document.createElement('div');
+  err.style.cssText='position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:monospace;z-index:5;';
+  const t=document.createElement('div');t.style.cssText='color:#f55;font-size:14px;letter-spacing:4px;';t.textContent=title;
+  const s=document.createElement('div');s.style.cssText='color:#0a0;font-size:11px;letter-spacing:1px;';s.textContent=subtitle;
+  err.appendChild(t);err.appendChild(s);
+  let _gone=false;
+  function _go(){if(_gone)return;_gone=true;window.removeEventListener('online',_onOnline);if(onContinue)onContinue();}
+  function _onOnline(){_go();}
+  const btnRow=document.createElement('div');btnRow.style.cssText='display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center;';
+  if(onContinue){
+    const c=document.createElement('button');c.textContent='[ CONTINUE ANYWAY ]';
+    c.style.cssText='background:#000;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    c.onmouseover=()=>{c.style.background='rgba(0,255,0,0.1)';c.style.borderColor='#0f0';};
+    c.onmouseout=()=>{c.style.background='#000';c.style.borderColor='rgba(0,255,0,0.4)';};
+    c.onclick=_go;
+    btnRow.appendChild(c);
+    window.addEventListener('online',_onOnline);
+  }
+  if(goBack&&!window._termPrint){
+    const b=document.createElement('button');b.textContent='[ EXIT ]';
+    b.style.cssText='background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    b.onmouseover=()=>{b.style.background='rgba(255,85,85,0.1)';b.style.borderColor='#f55';};
+    b.onmouseout=()=>{b.style.background='#000';b.style.borderColor='rgba(255,85,85,0.4)';};
+    b.onclick=()=>{_gone=true;window.removeEventListener('online',_onOnline);goBack();};
+    btnRow.appendChild(b);
+  }
+  err.appendChild(btnRow);
+  document.body.appendChild(err);
+  addCopyright();
+}
+/* ══ Shared network probe — loads PeerJS as a real connectivity test ══ */
+function _probeNetwork(onOk, onFail){
+  if(typeof Peer!=='undefined'){onOk();return;}
+  const s=document.createElement('script');
+  s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+  s.onload=()=>{onOk();};
+  s.onerror=()=>{document.head.removeChild(s);onFail();};
+  document.head.appendChild(s);
+}
+
   document.addEventListener("keydown",function(e){
     if((e.ctrlKey||e.metaKey)&&e.key==="a"){
       const t=document.activeElement;
@@ -295,7 +358,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.3.0";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.5.0";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -974,12 +1037,16 @@ function showWebRTC(goBack){
 
   const _origGoBack = goBack;
   goBack = function(){
-    // Destroy PeerJS peer on exit to free the connection
     if(window._rtcPeer){ try{ window._rtcPeer.destroy(); }catch(e){} window._rtcPeer=null; }
     _origGoBack();
   };
 
+  const isTerminal=!!(window._termPrint);
   clearBody();
+  _probeNetwork(
+    ()=>{ _initRTC(isTerminal); },
+    ()=>{ showFailScreen('NETWORK UNAVAILABLE','WebRTC requires an internet connection.',goBack,()=>{clearBody();_initRTC(isTerminal);}); }
+  );
 
   /* ── inject PeerJS from CDN if not already loaded ── */
   function _initRTC(isTerminal){
@@ -1269,33 +1336,11 @@ function showWebRTC(goBack){
       _refreshBtn();
     });
   }
-
-  /* load PeerJS if needed, then init */
-  const isTerminal=bindEscIfTerminal(goBack);
-  function _initRTCWrapped(){ _initRTC(isTerminal); }
-  if(typeof Peer==='undefined'){
-    const s=document.createElement('script');
-    s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
-    s.onload=_initRTCWrapped;
-    s.onerror=()=>{
-      clearBody();
-      const err=document.createElement('div');
-      err.style.cssText='position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:monospace;z-index:5;';
-      err.innerHTML='<div style="color:#f55;font-size:14px;letter-spacing:4px;">PEERJS LOAD FAILED</div><div style="color:#0a0;font-size:11px;">Check your internet connection.</div>';
-      if(!isTerminal){const b=document.createElement('button');b.textContent='[ EXIT ]';b.style.cssText='margin-top:10px;background:#000;color:#f55;border:1px solid rgba(255,85,85,0.5);font-family:monospace;font-size:13px;padding:8px 20px;cursor:pointer;letter-spacing:2px;';b.onclick=goBack;err.appendChild(b);}
-      document.body.appendChild(err);
-    };
-    document.head.appendChild(s);
-  } else {
-    _initRTCWrapped();
-  }
 }
 
 
 /* ══════════════════ GITFETCH ══════════════════ */
-function showGitFetch(goBack){
-  if(!goBack)goBack=showMenu;
-  const fromTerminal=!!(window._termPrint);
+function _launchGitFetchIframe(goBack,fromTerminal){
   clearBody();
   const srcdoc=`<!DOCTYPE html>
 <html lang="en">
@@ -1817,7 +1862,7 @@ function showGitFetch(goBack){
         <span class="app-title">gitfetch</span>
         <span class="app-badge"><i class="fab fa-github"></i>&nbsp; API</span>
         <span class="app-badge" style="margin-left:auto;border-color:transparent;color:rgba(0,255,0,0.25);letter-spacing:1px;font-size:9px;"></span>
-        <button id="backBtn" onclick="window.parent.postMessage('gitfetch-back','*')" style="display:none;margin-left:12px;background:transparent;border:1px solid rgba(255,85,85,0.35);color:#f55;font-family:monospace;font-size:11px;padding:4px 14px;letter-spacing:2px;cursor:pointer;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,85,85,0.1)';this.style.borderColor='#f55';" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,85,85,0.35)';">&#x2190; BACK</button>
+        <button id="backBtn" onclick="window.parent.postMessage('gitfetch-back','*')" style="display:none;margin-left:12px;background:#000;border:1px solid rgba(255,85,85,0.4);color:#f55;font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,85,85,0.1)';this.style.borderColor='#f55';" onmouseout="this.style.background='#000';this.style.borderColor='rgba(255,85,85,0.4)';">[ EXIT ]</button>
     </div>
 
     <div class="app-body">
@@ -2526,8 +2571,10 @@ function downloadFile(url, filename) {
   iframe.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:3;background:#000;";
   iframe.srcdoc=srcdoc;
   document.body.appendChild(iframe);
+
   if(!fromTerminal){
     iframe.addEventListener("load",()=>{
+      _loadOk=true;
       try{ iframe.contentDocument.getElementById("backBtn").style.display=""; }catch(e){}
     });
     window.addEventListener("message",function onGitBack(e){
@@ -2537,7 +2584,6 @@ function downloadFile(url, filename) {
       }
       if(e.data&&e.data.type==="play-audio"){
         window.removeEventListener("message",onGitBack);
-        // Launch music player over the gitfetch iframe, transparent bg
         const trackUrl=e.data.url;
         const trackName=e.data.name;
         const trackExt=e.data.ext;
@@ -2548,6 +2594,17 @@ function downloadFile(url, filename) {
   function onEsc(e){if(e.key==="Escape"){document.removeEventListener("keydown",onEsc);goBack();}}
   document.addEventListener("keydown",onEsc);
   addCopyright();
+}
+
+function showGitFetch(goBack){
+  if(!goBack)goBack=showMenu;
+  const fromTerminal=!!(window._termPrint);
+  bindEscIfTerminal(goBack);
+  clearBody();
+  _probeNetwork(
+    ()=>{ _launchGitFetchIframe(goBack,fromTerminal); },
+    ()=>{ showFailScreen('NETWORK UNAVAILABLE','GitFetch requires an internet connection.',goBack,()=>{clearBody();_launchGitFetchIframe(goBack,fromTerminal);}); }
+  );
 }
 
 function showMenu(){
@@ -2563,7 +2620,7 @@ function showMenu(){
     ["HTML Editor",   ()=>showEditor("",showMenu)],
     ["Browser",    ()=>showURLPage(showMenu)],
     ["Base64 Tool",   ()=>showBase64(showMenu)],
-    ["CPU Stress",    ()=>showStress(showMenu)],
+    ["System Usage",    ()=>showStress(showMenu)],
     ["Draw / Paint",  ()=>showDraw(showMenu)],
     ["Pixel Art",     ()=>showPixelArt(showMenu)],
     ["ASCII Art",     ()=>showASCII(showMenu)],
@@ -2827,12 +2884,117 @@ function showEditor(existingHTML, goBack){
 
 function showURLPage(goBack){
   if(!goBack)goBack=showMenu;
+  const fromTerminal=bindEscIfTerminal(goBack);
+  clearBody();
+  _probeNetwork(
+    ()=>{ _launchURLPage(goBack,fromTerminal); },
+    ()=>{ showFailScreen('NETWORK UNAVAILABLE','Browser requires an internet connection.',goBack,()=>{clearBody();_launchURLPage(goBack,fromTerminal);}); }
+  );
+}
+
+function _launchURLPage(goBack,fromTerminal){
   clearBody();
   const page=document.createElement("div");page.className="url-page";
-  const hdr=document.createElement("div");hdr.className="url-page-header";
-  const addrInput=document.createElement("input");addrInput.type="text";addrInput.placeholder="https://...";
+
+  /* ── HEADER ── */
+  const hdr=document.createElement("div");hdr.className="url-page-hdr";
+  const titleWrap=document.createElement("div");
+  titleWrap.innerHTML='<span class="url-page-hdr-title">BROWSER<span class="url-page-hdr-sub">NETWORK ACCESS // DATA OS</span></span>';
+  const badge=document.createElement("div");badge.className="url-page-badge";badge.textContent="v2.0";
+  const hdrRight=document.createElement("div");hdrRight.className="url-page-hdr-right";
+  if(!fromTerminal){
+    const exitBtn=document.createElement("button");
+    exitBtn.textContent="[ EXIT ]";
+    exitBtn.style.cssText="background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;";
+    exitBtn.onmouseover=()=>{exitBtn.style.background="rgba(255,85,85,0.1)";exitBtn.style.borderColor="#f55";};
+    exitBtn.onmouseout=()=>{exitBtn.style.background="#000";exitBtn.style.borderColor="rgba(255,85,85,0.4)";};
+    exitBtn.onclick=goBack;
+    hdrRight.appendChild(exitBtn);
+  }
+  hdr.appendChild(titleWrap);hdr.appendChild(badge);hdr.appendChild(hdrRight);
+
+  /* ── BODY ── */
+  const body=document.createElement("div");body.className="url-page-body";
+
+  /* ── SIDEBAR ── */
+  const sb=document.createElement("div");sb.className="url-page-sidebar";
+  const sbHdr=document.createElement("div");sbHdr.className="url-page-sb-hdr";sbHdr.textContent="QUICK LINKS";
+  const sbScroll=document.createElement("div");sbScroll.className="url-page-sb-scroll";
+
+  const qlLinks=[
+    {label:"Slope Online",          url:"https://slopeonline.online"},
+    {label:"Gitlab Games",          url:"https://gitlabgames.gitlab.io/game/"},
+    {label:"GamesLOL",              url:"https://en.gameslol.net/"},
+    {label:"GX-Client (MC 1.8.8)", url:"https://gx-client.surge.sh/GX-Client%20WASM.html"},
+  ];
+
+  const qlLabel=document.createElement("span");qlLabel.className="url-page-sb-label";qlLabel.textContent="NAVIGATE TO";
+  sbScroll.appendChild(qlLabel);
+
+  const qlCard=document.createElement("div");qlCard.className="url-page-sb-card";
+  const qlCardTop=document.createElement("div");qlCardTop.className="url-page-sb-card-top";
+  qlCard.appendChild(qlCardTop);
+  qlLinks.forEach(({label,url})=>{
+    const btn=document.createElement("button");btn.className="url-page-ql-item";btn.textContent=label;
+    btn.onclick=()=>showURLMode(url,goBack);
+    qlCard.appendChild(btn);
+  });
+  sbScroll.appendChild(qlCard);
+
+  const div1=document.createElement("div");div1.className="url-page-sb-divider";
+  sbScroll.appendChild(div1);
+
+  const infoLabel=document.createElement("span");infoLabel.className="url-page-sb-label";infoLabel.textContent="SEARCH";
+  sbScroll.appendChild(infoLabel);
+
+  const infoCard=document.createElement("div");infoCard.className="url-page-sb-card";
+  infoCard.style.cssText+="font-size:10px;color:#0a0;letter-spacing:1px;line-height:1.9;";
+  infoCard.innerHTML='ENTER A URL TO LOAD IT<br>IN THE BROWSER FRAME.<br><br>ENTER ANY OTHER TEXT<br>TO SEARCH WIKIPEDIA.';
+  sbScroll.appendChild(infoCard);
+
+  sb.appendChild(sbHdr);sb.appendChild(sbScroll);
+
+  /* ── MAIN ── */
+  const main=document.createElement("div");main.className="url-page-main";
+
+  /* search bar */
+  const searchBar=document.createElement("div");searchBar.className="url-page-search-bar";
+  const addrInput=document.createElement("input");
+  addrInput.type="text";addrInput.placeholder="enter url or search wikipedia...";
+  addrInput.spellcheck=false;addrInput.autocomplete="off";
+
+  function mkPageBtn(txt,fn){
+    const b=document.createElement("button");b.textContent=txt;
+    b.style.cssText="background:transparent;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:12px;padding:6px 14px;letter-spacing:2px;cursor:pointer;white-space:nowrap;";
+    b.onmouseover=()=>{b.style.background="rgba(0,255,0,0.1)";b.style.borderColor="#0f0";};
+    b.onmouseout=()=>{b.style.background="transparent";b.style.borderColor="rgba(0,255,0,0.4)";};
+    b.onclick=fn;return b;
+  }
+
+  const goBtn=mkPageBtn("[ GO ]",handleGo);
+  searchBar.appendChild(addrInput);searchBar.appendChild(goBtn);
+
+  /* results area */
+  const results=document.createElement("div");results.className="url-page-results";
+
+  /* wiki result card — reusing existing styles */
   const wikiResult=document.createElement("div");wikiResult.className="wiki-result";
+  results.appendChild(wikiResult);
+
+  main.appendChild(searchBar);main.appendChild(results);
+
+  /* status bar */
+  const statusBar=document.createElement("div");statusBar.className="url-page-status";
+  statusBar.textContent="READY";
+
+  body.appendChild(sb);body.appendChild(main);
+  page.appendChild(hdr);page.appendChild(body);page.appendChild(statusBar);
+  document.body.appendChild(page);
+  setTimeout(()=>addrInput.focus(),50);
+  addCopyright();
+
   async function doWikiSearch(q){
+    statusBar.textContent="SEARCHING: "+q.toUpperCase()+"...";
     wikiResult.className="wiki-result visible";
     wikiResult.innerHTML='<span class="wiki-result-loading">[ SEARCHING... ]</span>';
     try{
@@ -2845,10 +3007,14 @@ function showURLPage(goBack){
           if(res2.ok){renderWiki(await res2.json());return;}
         }
         wikiResult.innerHTML='<span class="wiki-result-loading">[ NO RESULT FOUND ]</span>';
+        statusBar.textContent="NO RESULT FOR: "+q.toUpperCase();
         return;
       }
       renderWiki(await res.json());
-    }catch(e){wikiResult.innerHTML='<span class="wiki-result-loading">[ ERROR: '+e.message+' ]</span>';}
+    }catch(e){
+      wikiResult.innerHTML='<span class="wiki-result-loading">[ ERROR: '+e.message+' ]</span>';
+      statusBar.textContent="ERROR";
+    }
   }
   function renderWiki(d){
     const title=d.title||"";
@@ -2856,73 +3022,69 @@ function showURLPage(goBack){
     const body=d.extract||"No summary available.";
     const link=d.content_urls&&d.content_urls.desktop?d.content_urls.desktop.page:"";
     wikiResult.innerHTML=`<div class="wiki-result-title">${title}</div><div class="wiki-result-body">${desc}${body}</div>`+(link?`<a class="wiki-result-link" href="${link}" target="_blank">[ OPEN FULL ARTICLE ↗ ]</a>`:"");
+    statusBar.textContent="RESULT: "+title.toUpperCase();
   }
-  const goBtn=makeBtn("Go",()=>{
+
+  function handleGo(){
     const val=addrInput.value.trim();
     if(!val)return;
-    const u=normalizeURL(val);
-    // If it looks like a URL, load it; otherwise do a wiki search
     if(/^https?:\/\//i.test(val)||/^[\w-]+\.[\w.-]+(\/|$)/.test(val)){
-      showURLMode(u,goBack);
+      statusBar.textContent="NAVIGATING TO: "+val.toUpperCase();
+      showURLMode(normalizeURL(val),goBack);
     } else {
       doWikiSearch(val);
     }
-  });
-  addrInput.onkeydown=e=>{if(e.key==="Enter")goBtn.click();};
-
-  // ── Quick-links dropdown ──
-  const qlLinks=[
-    {label:"Slope Online",      url:"https://slopeonline.online",       srcdoc:null},
-    {label:"Gitlab Games",      url:"https://gitlabgames.gitlab.io/game/", srcdoc:null},
-    {label:"GamesLOL",      url:"https://en.gameslol.net/", srcdoc:null},
-    {label:"GX-Client (MC 1.8.8)", url:"https://gx-client.surge.sh/GX-Client%20WASM.html", srcdoc:null},
-  ];
-  const qlWrap=document.createElement("div");qlWrap.className="ql-wrap";
-  const qlBtn=document.createElement("button");qlBtn.className="ql-btn";qlBtn.textContent="⬇ Quick Links";
-  const qlDrop=document.createElement("div");qlDrop.className="ql-dropdown";
-  const qlHead=document.createElement("div");qlHead.className="ql-header";qlHead.textContent="QUICK LINKS";
-  qlDrop.appendChild(qlHead);
-  qlLinks.forEach(({label,url,srcdoc})=>{
-    const item=document.createElement("button");item.className="ql-item";item.textContent=label;
-    item.onclick=()=>{
-      qlDrop.classList.remove("open");
-      if(srcdoc){showIframeGame(srcdoc,goBack,true);}
-      else{showURLMode(url,goBack);}
-    };
-    qlDrop.appendChild(item);
-  });
-  qlBtn.onclick=(e)=>{e.stopPropagation();qlDrop.classList.toggle("open");};
-  document.addEventListener("click",()=>qlDrop.classList.remove("open"));
-  qlWrap.appendChild(qlBtn);qlWrap.appendChild(qlDrop);
-
-  const urlBtns=bindEscIfTerminal(goBack)?[addrInput,goBtn,qlWrap]:[makeBtn("Back",goBack),addrInput,goBtn,qlWrap];
-  urlBtns.forEach(el=>hdr.appendChild(el));
-  page.appendChild(hdr);
-
-  // ── Wiki result panel ──
-  const wikiSection=document.createElement("div");
-  wikiSection.style.cssText="width:100%;max-width:680px;margin:18px auto 0;padding:0 20px;box-sizing:border-box;";
-  wikiSection.appendChild(wikiResult);
-  page.appendChild(wikiSection);
-
-  document.body.appendChild(page);
-  addCopyright();
+  }
+  addrInput.onkeydown=e=>{if(e.key==="Enter")handleGo();};
 }
 
 function showURLMode(initialURL,goBack){
   if(!goBack)goBack=showMenu;
   clearBody();
+  _probeNetwork(
+    ()=>{ _doLaunchURLMode(); },
+    ()=>{ showFailScreen('NETWORK UNAVAILABLE','Browser requires an internet connection.',goBack,()=>{clearBody();_doLaunchURLMode();}); }
+  );
+  function _doLaunchURLMode(){
   const iframe=document.createElement("iframe");iframe.src=initialURL;
   _ilog("info","Navigating to: "+initialURL);
-  iframe.addEventListener("load",()=>{try{const u=iframe.contentWindow.location.href;_ilog("log","Page loaded: "+u);}catch(e){_ilog("log","Page loaded (cross-origin)");}});
-  iframe.addEventListener("error",()=>_ilog("error","Failed to load: "+initialURL));
+  iframe.addEventListener("load",()=>{try{const u=iframe.contentWindow.location.href;if(u&&u!=="about:blank")addressBar.value=u;_ilog("log","Page loaded: "+u);}catch(e){_ilog("log","Page loaded (cross-origin)");}});
+  iframe.addEventListener("error",()=>{_ilog("error","Failed to load: "+initialURL);showFailScreen('PAGE LOAD FAILED',initialURL.length>50?initialURL.slice(0,50)+'...':initialURL,()=>showURLPage(goBack),()=>showURLMode(initialURL,goBack));});
   const hoverZone=document.createElement("div");hoverZone.className="hover-zone";
   const topbar=document.createElement("div");topbar.className="topbar";
-  const addressBar=document.createElement("input");addressBar.type="text";addressBar.value=initialURL;
-  const goBtn=makeBtn("Go",()=>{const u=normalizeURL(addressBar.value);if(u)iframe.src=u;});
-  addressBar.onkeydown=e=>{if(e.key==="Enter")goBtn.click();};
-  const backBtn=makeBtn("Back",()=>{try{iframe.contentWindow.history.back();}catch{alert("Cross-origin restriction.");}});
-  [makeBtn("⬅ Loader",()=>showURLPage(goBack)),backBtn,addressBar,goBtn].forEach(el=>topbar.appendChild(el));
+  const addressBar=document.createElement("input");addressBar.type="text";addressBar.value=initialURL;addressBar.spellcheck=false;addressBar.autocomplete="off";
+
+  function handleGo(){
+    const val=addressBar.value.trim();
+    if(!val)return;
+    // Same logic as the loader: URL → load in iframe, text → go back to loader with query
+    if(/^https?:\/\//i.test(val)||/^[\w-]+\.[\w.-]+(\/|$)/.test(val)){
+      const u=normalizeURL(val);
+      iframe.src=u;
+      _ilog("info","Navigating to: "+u);
+    } else {
+      // Non-URL: go to loader and pre-fill / auto-search
+      showURLPage(goBack);
+      // After loader renders, fill the input and trigger a search
+      setTimeout(()=>{
+        const loaderInput=document.querySelector(".url-page-search-bar input");
+        if(loaderInput){loaderInput.value=val;loaderInput.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));}
+      },80);
+    }
+  }
+
+  addressBar.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();handleGo();}};
+  const goBtn=makeBtn("GO",handleGo);
+  const reloadBtn=makeBtn("↻",()=>{try{iframe.contentWindow.location.reload();}catch{iframe.src=iframe.src;_ilog("warn","Cross-origin: hard reload");}});
+  reloadBtn.title="Reload";
+  const loaderBtn=document.createElement("button");
+  loaderBtn.textContent="LOADER";
+  loaderBtn.style.cssText="padding:8px 14px;font-size:14px;cursor:pointer;background:rgba(0,0,0,0.2);color:#0f0;border:1px solid rgba(0,255,0,0.3);font-family:monospace;margin-left:0;";
+  loaderBtn.onmouseenter=()=>{loaderBtn.style.background="rgba(0,255,0,0.15)";loaderBtn.style.borderColor="#0f0";};
+  loaderBtn.onmouseleave=()=>{loaderBtn.style.background="rgba(0,0,0,0.2)";loaderBtn.style.borderColor="rgba(0,255,0,0.3)";};
+  loaderBtn.onclick=()=>showURLPage(goBack);
+  [loaderBtn,reloadBtn,addressBar,goBtn].forEach(el=>topbar.appendChild(el));
+
   let hT,hT2;
   hoverZone.addEventListener("mouseenter",()=>hT=setTimeout(()=>topbar.classList.add("visible"),600));
   hoverZone.addEventListener("mouseleave",()=>clearTimeout(hT));
@@ -2930,6 +3092,7 @@ function showURLMode(initialURL,goBack){
   topbar.addEventListener("mouseleave",()=>hT2=setTimeout(()=>topbar.classList.remove("visible"),300));
   document.body.appendChild(iframe);document.body.appendChild(hoverZone);document.body.appendChild(topbar);
   addCopyright();
+  } // end _doLaunchURLMode
 }
 
 function showBase64(goBack){
@@ -3010,9 +3173,11 @@ function showTaskMgr(goBack){
   const badge=document.createElement("div");badge.className="stress-badge";badge.id="tmBadge";badge.textContent=cores+" LOGICAL CORES";
   headerRight.appendChild(badge);
   if(!bindEscIfTerminal(goBack)){
-    const backBtn=document.createElement("button");backBtn.className="stress-btn";
-    backBtn.style.cssText="flex:none;padding:4px 14px;font-size:12px;letter-spacing:1px;";
-    backBtn.textContent="Back";
+    const backBtn=document.createElement("button");
+    backBtn.textContent="[ EXIT ]";
+    backBtn.style.cssText="background:#000;border:1px solid rgba(255,85,85,0.4);color:#f55;font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;transition:background 0.15s,border-color 0.15s;margin:0;";
+    backBtn.onmouseover=()=>{backBtn.style.background="rgba(255,85,85,0.1)";backBtn.style.borderColor="#f55";};
+    backBtn.onmouseout=()=>{backBtn.style.background="#000";backBtn.style.borderColor="rgba(255,85,85,0.4)";};
     backBtn.onclick=()=>{teardownActiveTab();stopTest();goBack();};
     headerRight.appendChild(backBtn);
   }
@@ -4355,7 +4520,7 @@ function launchExplorer(startPath,goBack){
                 "htmleditor.exe": ()=>showEditor("",returnToExplorer),
                 "browser.exe":  ()=>showURLPage(returnToExplorer),
                 "base64.exe":     ()=>showBase64(returnToExplorer),
-                "stress.exe":     ()=>showStress(returnToExplorer),
+                "sysusage.exe":     ()=>showStress(returnToExplorer),
                 "pixelart.exe":   ()=>showPixelArt(returnToExplorer),
                 "ascii.exe":      ()=>showASCII(returnToExplorer),
                 "hacker.exe":     ()=>showHackerTyper(returnToExplorer),
@@ -4369,7 +4534,7 @@ function launchExplorer(startPath,goBack){
                 "2048.exe":       ()=>launch2048(returnToExplorer),
                 "doom.exe":       ()=>showDoom(returnToExplorer),
                 "wolf3d.exe":     ()=>showWolf3D(returnToExplorer),
-                "taskmgr.exe":    ()=>showStress(returnToExplorer),
+                "sysusage.exe":    ()=>showStress(returnToExplorer),
                 "chrome.exe":     ()=>{},
                 "gitfetch.exe":   ()=>showGitFetch(returnToExplorer),
                 "EZ-Mode.html":   ()=>showMenu(),
@@ -4411,8 +4576,8 @@ const fs={
       "Apps":{},
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
-      "taskmgr.exe":"(executable)",
-      "readme.txt":"Data OS 10.3.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\ntaskmgr.exe  - Task Manager\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - CPU Stress Test\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "sysusage.exe":"(executable)",
+      "readme.txt":"Data OS 10.5.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  sysusage.exe     - System Usage Monitor\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -4438,7 +4603,7 @@ const fs={
       "htmleditor.exe":"(executable)",
       "browser.exe":"(executable)",
       "base64.exe":"(executable)",
-      "stress.exe":"(executable)",
+      "sysusage.exe":"(executable)",
       "paint.exe":"(executable)",
       "pixelart.exe":"(executable)",
       "ascii.exe":"(executable)",
@@ -4481,13 +4646,13 @@ function canonicalizePath(path){
     "calc.exe":      ()=>launchCalculator(),
     "notepad.exe":   ()=>launchNotepad(null,""),
     "explorer.exe":  ()=>launchExplorer("C:\\Users\\anonymous"),
-    "taskmgr.exe":   ()=>{},
+    "sysusage.exe":   ()=>{},
     "paint.exe":     ()=>showDraw(showMenu),
     "mspaint.exe":   ()=>showDraw(showMenu),
     "htmleditor.exe":()=>showEditor("",showMenu),
     "browser.exe": ()=>showURLPage(showMenu),
     "base64.exe":    ()=>showBase64(showMenu),
-    "stress.exe":    ()=>showStress(showMenu),
+    "sysusage.exe":    ()=>showStress(showMenu),
     "pixelart.exe":  ()=>showPixelArt(showMenu),
     "ascii.exe":     ()=>showASCII(showMenu),
     "hacker.exe":    ()=>showHackerTyper(showMenu),
@@ -4552,16 +4717,16 @@ function showTerminal(goBack){
 
   // Which directory each exe must be run from (null = anywhere)
   const exeDirectories={
-    "notepad.exe":null,
+    "notepad.exe":"C:\\Users\\anonymous\\Apps",
     "explorer.exe":null,
-    "taskmgr.exe":null,
+    "sysusage.exe":"C:\\Users\\anonymous\\Apps",
     "mspaint.exe":null,
     "paint.exe":"C:\\Users\\anonymous\\Apps",
     "calc.exe":"C:\\Users\\anonymous\\Apps",
     "htmleditor.exe":"C:\\Users\\anonymous\\Apps",
     "browser.exe":"C:\\Users\\anonymous\\Apps",
     "base64.exe":"C:\\Users\\anonymous\\Apps",
-    "stress.exe":"C:\\Users\\anonymous\\Apps",
+    "sysusage.exe":"C:\\Users\\anonymous\\Apps",
     "pixelart.exe":"C:\\Users\\anonymous\\Apps",
     "ascii.exe":"C:\\Users\\anonymous\\Apps",
     "hacker.exe":"C:\\Users\\anonymous\\Apps",
@@ -4580,12 +4745,12 @@ function showTerminal(goBack){
     "paint.exe":()=>{print("Opening Paint...");setTimeout(()=>showDraw(showTerminal),100);},
     "explorer.exe":()=>launchExplorer("C:\\Users\\anonymous"),
     "chrome.exe":()=>{print("Google Chrome is already running.");},
-    "cmd.exe":()=>{print("Microsoft Windows [Version 10.3.09245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
-    "taskmgr.exe":()=>{print("Opening Task Manager...");setTimeout(()=>showStress(showTerminal),100);},
+    "cmd.exe":()=>{print("Microsoft Windows [Version 10.5.09245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
+    "sysssage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
     "htmleditor.exe":()=>{print("Opening HTML Editor...");setTimeout(()=>showEditor("",showTerminal),100);},
     "browser.exe":()=>{print("Opening Browser...");setTimeout(()=>showURLPage(showTerminal),100);},
     "base64.exe":()=>{print("Opening Base64 Tool...");setTimeout(()=>showBase64(showTerminal),100);},
-    "stress.exe":()=>{print("Opening CPU Stress Test...");setTimeout(()=>showStress(showTerminal),100);},
+    "sysusage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
     "pixelart.exe":()=>{print("Opening Pixel Art Editor...");setTimeout(()=>showPixelArt(showTerminal),100);},
     "ascii.exe":()=>{print("Opening ASCII Art Maker...");setTimeout(()=>showASCII(showTerminal),100);},
     "hacker.exe":()=>{print("Opening Hacker Typer...");setTimeout(()=>showHackerTyper(showTerminal),100);},
@@ -4814,7 +4979,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 10.3.0]");
+        print("Data OS Terminal [Version 10.5.0]");
         print("");
         break;
 
@@ -4837,7 +5002,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                10.3.0 Build 19246");
+        print("OS Version:                10.5.0 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -5026,7 +5191,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 10.3.0`);
+  print(`DATA OS 10.5.0`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
@@ -5067,7 +5232,7 @@ function showInspect(){
 
   const tabBar=document.createElement("div");tabBar.className="inspect-tabs";
 
-  const TABS=["Elements","Console","Network","Performance","Storage","Info"];
+  const TABS=["Elements","Console","Network","Performance","Storage","Info","Source"];
   const panels={};
   const tabEls={};
 
