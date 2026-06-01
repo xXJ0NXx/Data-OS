@@ -1,6 +1,6 @@
-# Data OS
-
 <div align="center">
+
+# Data OS
 
 ```
 ██████╗  █████╗ ████████╗ █████╗      ██████╗ ███████╗
@@ -18,9 +18,22 @@
 ![License](https://img.shields.io/badge/License-MIT-0f0?style=flat-square&labelColor=000&color=0f0)
 ![No Dependencies](https://img.shields.io/badge/Dependencies-None-0f0?style=flat-square&labelColor=000&color=0f0)
 
+![](imgs/1.png)
+![](imgs/2.png)
+![](imgs/3.png)
+![](imgs/4.png)
+![](imgs/5.png)
+![](imgs/6.png)
+![](imgs/7.png)
+![](imgs/8.png)
+![](imgs/9.png)
+![](imgs/10.png)
+
 </div>
 
 ---
+
+<div align="center">
 
 ## What is Data OS?
 
@@ -28,13 +41,19 @@ Data OS is a **single HTML file** that turns your browser into a retro terminal 
 
 Originally built to live as a Base64 data URI in a browser's address bar (to work around school `file://` restrictions), it evolved into a full featured web OS.
 
+</div>
+
 ---
 
 ## Features
 
+<div align="center">
+
 ### MS-DOS Terminal
 
 A fully emulated command-line environment with a real virtual filesystem.
+
+</div>
 
 ```
 C:\Users\anonymous> dir
@@ -43,6 +62,8 @@ C:\Users\anonymous\Games> tetris
 C:\Users\anonymous\Games> cd ..\Apps
 C:\Users\anonymous\Apps> calc.exe
 ```
+
+<div align="center">
 
 **Supported commands:**
 
@@ -61,6 +82,8 @@ C:\Users\anonymous\Apps> calc.exe
 | `help [cmd]` | Get help on any command |
 | `ez-mode` | Open the EZ-Mode GUI launcher |
 
+</div>
+
 **Virtual filesystem layout:**
 ```
 C:\
@@ -76,6 +99,8 @@ C:\
 ```
 
 ---
+
+<div align="center">
 
 ### P2P Messaging — `peer.exe`
 
@@ -215,6 +240,8 @@ Or boot directly into the **EZ-Mode** launcher by typing `ez-mode` in the termin
 
 Data OS is a **single self-contained HTML file**. Everything — styles, logic, all app code, and the virtual filesystem — lives inside one file.
 
+</div>
+
 ```
 data-os.html
 ├── <style>          Global CSS + per-app styles (green-on-black theme)
@@ -225,6 +252,8 @@ data-os.html
 ├── Games            pong, tetris, snake, minesweeper, breakout, 2048
 └── EZ-Mode          GUI launcher overlay
 ```
+
+<div align="center">
 
 **Key design constraints:**
 - Zero external dependencies (PeerJS is loaded on-demand for P2P only)
@@ -249,4 +278,12 @@ data-os.html
 
 ## Credits
 
-Jon Stearns - xXJ0NXx
+Jon Stearns — xXJ0NXx
+
+---
+
+## License
+
+MIT — do whatever you want with it.
+
+</div>
