@@ -250,5 +250,3 @@ data-os.html
 ## Credits
 
 Jon Stearns - xXJ0NXx
-
--Won't lie, this readme is ai
