@@ -249,10 +249,6 @@ data-os.html
 
 ## Credits
 
-Built by **Jon** — a self-taught developer building ambitious things on a Chromebook.
+Jon Stearns - xXJ0NXx
 
----
-
-## License
-
-MIT — do whatever you want with it.
+-Won't lie, this readme is ai
