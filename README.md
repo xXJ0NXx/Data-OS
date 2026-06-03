@@ -3,7 +3,7 @@
 # Data OS
 
 
-**v10.5.0** · A browser-based hacker OS with a full terminal, apps, and retro games.
+**v11.0.0** · A browser-based hacker OS with a full terminal, apps, and retro games.
 
 
 ![](imgs/1.png)
