@@ -57,20 +57,32 @@ button:hover{background:rgba(0,255,0,0.15);border-color:#0f0;}
 .url-page-badge{font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;}
 .url-page-hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
 .url-page-body{flex:1;display:flex;overflow:hidden;}
-.url-page-sidebar{width:260px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;}
+.url-page-sidebar{width:220px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;}
 .url-page-sb-hdr{padding:10px 14px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);text-transform:uppercase;}
-.url-page-sb-scroll{flex:1;overflow-y:auto;padding:14px;}
-.url-page-sb-label{font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;}
-.url-page-sb-card{background:#050505;border:1px solid rgba(0,255,0,0.2);padding:10px 12px;margin-bottom:12px;position:relative;}
-.url-page-sb-card-top{position:absolute;top:0;left:0;right:0;height:1px;background:#0f0;box-shadow:0 0 6px #0f0;}
+.url-page-sb-scroll{flex:1;overflow-y:auto;padding:14px 0;}
+.url-page-sb-label{font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:6px;display:block;padding:0 12px;}
+.url-page-sb-card{margin-bottom:16px;}
+.url-page-sb-card-top{display:none;}
 .url-page-sb-divider{height:1px;background:rgba(0,255,0,0.15);margin:12px 0;}
 .url-page-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#020202;}
 .url-page-search-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;}
 .url-page-search-bar input{flex:1;background:#0d0d0d;border:1px solid rgba(0,255,0,0.2);color:#0f0;font-family:monospace;font-size:13px;padding:7px 10px;outline:none;transition:border-color 0.15s;}
 .url-page-search-bar input:focus{border-color:#0f0;}
 .url-page-results{flex:1;overflow-y:auto;padding:16px;}
-.url-page-ql-item{display:block;width:100%;padding:8px 10px;background:transparent;color:#0f0;border:none;border-bottom:1px solid rgba(0,255,0,0.07);font-family:monospace;font-size:12px;cursor:pointer;text-align:left;box-sizing:border-box;letter-spacing:1px;}
-.url-page-ql-item:hover{background:rgba(0,255,0,0.07);color:#fff;}
+.url-page-ql-item{display:block;width:100%;padding:7px 12px;background:transparent;color:#0a0;border:none;border-bottom:1px solid rgba(0,255,0,0.07);font-family:monospace;font-size:11px;cursor:pointer;text-align:left;box-sizing:border-box;letter-spacing:2px;text-transform:uppercase;}
+.url-page-ql-item::before{content:'  ';white-space:pre;}
+.url-page-ql-item:hover{background:rgba(0,255,0,0.08);color:#0f0;}
+.url-page-ql-item:hover::before{content:'> ';}
+.app-sb-btn{display:block;width:100%;padding:7px 12px;background:transparent;color:#0a0;border:none;border-bottom:1px solid rgba(0,255,0,0.07);font-family:monospace;font-size:11px;cursor:pointer;text-align:left;box-sizing:border-box;letter-spacing:2px;text-transform:uppercase;}
+.app-sb-btn::before{content:'  ';white-space:pre;}
+.app-sb-btn:hover{background:rgba(0,255,0,0.08);color:#0f0;}
+.app-sb-btn:hover::before{content:'> ';}
+.app-sb-btn.active{background:#0f0;color:#000;font-weight:bold;}
+.app-sb-btn.active::before{content:'> ';}
+.app-sb-tog{display:flex;align-items:center;gap:6px;width:100%;padding:7px 12px;background:transparent;border:none;border-bottom:1px solid rgba(0,255,0,0.07);font-family:monospace;font-size:11px;cursor:pointer;text-align:left;box-sizing:border-box;letter-spacing:2px;text-transform:uppercase;}
+.app-sb-tog:hover{background:rgba(0,255,0,0.08);}
+.app-sb-tog.off{opacity:0.28;}
+.app-sb-tog .tog-box{font-size:11px;flex-shrink:0;}
 .url-page-status{padding:4px 16px;min-height:24px;display:flex;align-items:center;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;}
 .b64-wrap{position:fixed;inset:0;z-index:3;}
 .b64-ta{position:absolute;inset:0;width:100%;height:100%;border:none;background:#111;color:#0f0;padding:20px;box-sizing:border-box;font-family:monospace;font-size:14px;resize:none;}
@@ -358,7 +370,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v10.5.0";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v11.0.0";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -2596,6 +2608,863 @@ function downloadFile(url, filename) {
   addCopyright();
 }
 
+
+/* ══════════════════ CIPHER TOOL ══════════════════ */
+function showCipher(goBack){
+  if(!goBack)goBack=showMenu;
+  const fromTerminal=bindEscIfTerminal(goBack);
+  clearBody();
+
+  const page=document.createElement('div');
+  page.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;font-family:monospace;color:#0f0;';
+
+  /* ── HEADER ── */
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;gap:14px;padding:0 16px;height:48px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  const titleWrap=document.createElement('div');
+  titleWrap.innerHTML='<span style="font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);">CIPHER<span style="font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;">ENCODE / DECODE // DATA OS</span></span>';
+  const badge=document.createElement('div');
+  badge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;';
+  badge.textContent='v1.0';
+  const hdrRight=document.createElement('div');
+  hdrRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:10px;';
+  if(!fromTerminal){
+    const exitBtn=document.createElement('button');
+    exitBtn.textContent='[ EXIT ]';
+    exitBtn.style.cssText='background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    exitBtn.onmouseover=()=>{exitBtn.style.background='rgba(255,85,85,0.1)';exitBtn.style.borderColor='#f55';};
+    exitBtn.onmouseout=()=>{exitBtn.style.background='#000';exitBtn.style.borderColor='rgba(255,85,85,0.4)';};
+    exitBtn.onclick=goBack;
+    hdrRight.appendChild(exitBtn);
+  }
+  hdr.appendChild(titleWrap);hdr.appendChild(badge);hdr.appendChild(hdrRight);
+
+  /* ── BODY ── */
+  const body=document.createElement('div');
+  body.style.cssText='flex:1;display:flex;overflow:hidden;';
+
+  /* ── SIDEBAR ── */
+  const sb=document.createElement('div');
+  sb.style.cssText='width:220px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;';
+  const sbHdr=document.createElement('div');
+  sbHdr.style.cssText='padding:10px 14px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);text-transform:uppercase;';
+  sbHdr.textContent='CIPHER MODE';
+  const sbScroll=document.createElement('div');
+  sbScroll.style.cssText='flex:1;overflow-y:auto;padding:14px;';
+
+  const modeLabel=document.createElement('span');
+  modeLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:6px;display:block;';
+  modeLabel.textContent='SELECT CIPHER';
+  sbScroll.appendChild(modeLabel);
+
+  const modeCard=document.createElement('div');
+  modeCard.style.cssText='margin-bottom:16px;';
+
+  const ciphers=['ROT13','Caesar','Vigenère','Atbash','Base32','Morse','Binary','Hex','Base64','Base64 URI'];
+  let activeCipher='ROT13';
+  const cipherBtns={};
+
+  ciphers.forEach(name=>{
+    const btn=document.createElement('button');
+    btn.className='app-sb-btn';
+    btn.textContent=name;
+    btn.onclick=()=>selectCipher(name);
+    cipherBtns[name]=btn;
+    modeCard.appendChild(btn);
+  });
+  sbScroll.appendChild(modeCard);
+
+  // Caesar shift / Vigenère key config
+  const configDiv=document.createElement('div');
+  configDiv.style.cssText='margin-top:4px;';
+  sbScroll.appendChild(configDiv);
+
+  const div1=document.createElement('div');
+  div1.style.cssText='height:1px;background:rgba(0,255,0,0.15);margin:12px 0;';
+  sbScroll.appendChild(div1);
+
+  const infoLabel=document.createElement('span');
+  infoLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;';
+  infoLabel.textContent='INFO';
+  sbScroll.appendChild(infoLabel);
+
+  const infoCard=document.createElement('div');
+  infoCard.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.2);padding:10px 12px;font-size:10px;color:#0a0;letter-spacing:1px;line-height:1.9;';
+  infoCard.id='cipher-info-card';
+  sbScroll.appendChild(infoCard);
+
+  sb.appendChild(sbHdr);sb.appendChild(sbScroll);
+
+  /* ── MAIN ── */
+  const main=document.createElement('div');
+  main.style.cssText='flex:1;display:flex;flex-direction:column;overflow:hidden;background:#020202;';
+
+  // action bar
+  const actionBar=document.createElement('div');
+  actionBar.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+
+  function mkActBtn(txt,fn){
+    const b=document.createElement('button');b.textContent=txt;
+    b.style.cssText='background:transparent;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:12px;padding:6px 14px;letter-spacing:2px;cursor:pointer;white-space:nowrap;';
+    b.onmouseover=()=>{b.style.background='rgba(0,255,0,0.1)';b.style.borderColor='#0f0';};
+    b.onmouseout=()=>{b.style.background='transparent';b.style.borderColor='rgba(0,255,0,0.4)';};
+    b.onclick=fn;return b;
+  }
+
+  const encBtn=mkActBtn('[ ENCODE ]',()=>runCipher(true));
+  const decBtn=mkActBtn('[ DECODE ]',()=>runCipher(false));
+  const swapBtn=mkActBtn('[ SWAP ]',swapIO);
+  const clearBtn=mkActBtn('[ CLEAR ]',()=>{inputTA.value='';outputTA.value='';statusBar.textContent='READY';});
+  const copyBtn=mkActBtn('[ COPY OUTPUT ]',()=>{navigator.clipboard&&navigator.clipboard.writeText(outputTA.value);statusBar.textContent='OUTPUT COPIED TO CLIPBOARD';});
+  [encBtn,decBtn,swapBtn,clearBtn,copyBtn].forEach(b=>actionBar.appendChild(b));
+
+  // panes
+  const panes=document.createElement('div');
+  panes.style.cssText='flex:1;display:flex;gap:0;overflow:hidden;';
+
+  function makePaneWrap(labelText){
+    const wrap=document.createElement('div');
+    wrap.style.cssText='flex:1;display:flex;flex-direction:column;min-width:0;';
+    const lbl=document.createElement('div');
+    lbl.style.cssText='padding:6px 16px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.12);background:#0a0a0a;flex-shrink:0;';
+    lbl.textContent=labelText;
+    const ta=document.createElement('textarea');
+    ta.style.cssText='flex:1;width:100%;background:#050505;color:#0f0;border:none;resize:none;font-family:monospace;font-size:13px;padding:14px 16px;outline:none;line-height:1.6;box-sizing:border-box;';
+    ta.spellcheck=false;
+    wrap.appendChild(lbl);wrap.appendChild(ta);
+    return{wrap,ta};
+  }
+
+  const{wrap:inWrap,ta:inputTA}=makePaneWrap('INPUT');
+  const divider=document.createElement('div');
+  divider.style.cssText='width:1px;background:rgba(0,255,0,0.15);flex-shrink:0;';
+  const{wrap:outWrap,ta:outputTA}=makePaneWrap('OUTPUT');
+  outputTA.readOnly=true;
+  outputTA.style.color='#0a0';
+
+  panes.appendChild(inWrap);panes.appendChild(divider);panes.appendChild(outWrap);
+
+  // status bar
+  const statusBar=document.createElement('div');
+  statusBar.style.cssText='padding:4px 16px;min-height:24px;display:flex;align-items:center;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;';
+  statusBar.textContent='READY';
+
+  main.appendChild(actionBar);main.appendChild(panes);main.appendChild(statusBar);
+  body.appendChild(sb);body.appendChild(main);
+  page.appendChild(hdr);page.appendChild(body);
+  document.body.appendChild(page);
+  addCopyright();
+
+  // ── cipher engine ──
+  const CIPHER_INFO={
+    'ROT13':'Rotates letters by 13. Self-inverse: encode = decode.',
+    'Caesar':'Shift letters by a fixed amount (default: 3).',
+    'Vigenère':'Polyalphabetic substitution using a keyword.',
+    'Atbash':'Reverses the alphabet. A↔Z, B↔Y, etc. Self-inverse.',
+    'Base32':'RFC 4648 base-32 encoding using A-Z and 2-7.',
+    'Morse':'International Morse Code. Use / between words.',
+    'Binary':'Encodes each character as 8-bit binary.',
+    'Hex':'Encodes each character as hexadecimal pairs.',
+    'Base64':'Standard Base64 encoding (RFC 4648). Upload files via drag & drop.',
+    'Base64 URI':'Wraps Base64 output as a data:text/html URI. Drag & drop files supported.',
+  };
+
+  let caesarShift=3,vigKey='KEY';
+
+  function selectCipher(name){
+    activeCipher=name;
+    Object.entries(cipherBtns).forEach(([n,b])=>{
+      b.className=n===name?'app-sb-btn active':'app-sb-btn';
+    });
+    infoCard.textContent=CIPHER_INFO[name]||'';
+    configDiv.innerHTML='';
+    if(name==='Caesar'){
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:10px;color:#0a0;letter-spacing:1px;';lbl.textContent='SHIFT';
+      const inp=document.createElement('input');
+      inp.type='number';inp.min=1;inp.max=25;inp.value=caesarShift;
+      inp.style.cssText='width:56px;background:#111;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:13px;padding:4px 6px;outline:none;';
+      inp.oninput=()=>{caesarShift=parseInt(inp.value)||3;};
+      row.appendChild(lbl);row.appendChild(inp);
+      configDiv.appendChild(row);
+    } else if(name==='Vigenère'){
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:10px;color:#0a0;letter-spacing:1px;';lbl.textContent='KEY';
+      const inp=document.createElement('input');
+      inp.type='text';inp.value=vigKey;inp.placeholder='keyword';
+      inp.style.cssText='flex:1;background:#111;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:13px;padding:4px 6px;outline:none;';
+      inp.oninput=()=>{vigKey=inp.value.toUpperCase().replace(/[^A-Z]/g,'')||'KEY';};
+      row.appendChild(lbl);row.appendChild(inp);
+      configDiv.appendChild(row);
+    }
+    statusBar.textContent='MODE: '+name.toUpperCase();
+  }
+
+  const MORSE_ENC={'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..','0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',' ':'/'};
+  const MORSE_DEC=Object.fromEntries(Object.entries(MORSE_ENC).map(([k,v])=>[v,k]));
+
+  function rot13(s){return s.replace(/[a-z]/gi,c=>{const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b);});}
+  function caesar(s,shift,dec){const d=dec?26-((shift%26+26)%26):(shift%26+26)%26;return s.replace(/[a-z]/gi,c=>{const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+d)%26+b);});}
+  function vigenere(s,key,dec){let ki=0;return s.replace(/[a-z]/gi,c=>{const b=c<='Z'?65:97;const k=key[ki%key.length].charCodeAt(0)-65;ki++;const shift=dec?(26-k)%26:k;return String.fromCharCode((c.charCodeAt(0)-b+shift)%26+b);});}
+  function atbash(s){return s.replace(/[a-z]/gi,c=>{const b=c<='Z'?65:97;return String.fromCharCode(b+25-(c.charCodeAt(0)-b));});}
+  function toBase32(s){const alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';let bits='',out='';for(const c of s)bits+=c.charCodeAt(0).toString(2).padStart(8,'0');while(bits.length%5!==0)bits+='0';for(let i=0;i<bits.length;i+=5)out+=alpha[parseInt(bits.slice(i,i+5),2)];while(out.length%8!==0)out+='=';return out;}
+  function fromBase32(s){const alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';let bits='',out='';s=s.toUpperCase().replace(/=+$/,'');for(const c of s){const i=alpha.indexOf(c);if(i<0)continue;bits+=i.toString(2).padStart(5,'0');}for(let i=0;i+8<=bits.length;i+=8)out+=String.fromCharCode(parseInt(bits.slice(i,i+8),2));return out;}
+  function toMorse(s){return s.toUpperCase().split('').map(c=>MORSE_ENC[c]||'?').join(' ');}
+  function fromMorse(s){return s.split(' / ').map(word=>word.split(' ').map(code=>MORSE_DEC[code]||'?').join('')).join(' ');}
+  function toBin(s){return s.split('').map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');}
+  function fromBin(s){return s.trim().split(/\s+/).map(b=>String.fromCharCode(parseInt(b,2))).join('');}
+  function toHex(s){return s.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');}
+  function fromHex(s){return s.trim().split(/\s+/).map(h=>String.fromCharCode(parseInt(h,16))).join('');}
+
+  function runCipher(encode){
+    const input=inputTA.value;
+    if(!input){statusBar.textContent='NO INPUT';return;}
+    let result='';
+    try{
+      switch(activeCipher){
+        case'ROT13':   result=rot13(input);break;
+        case'Caesar':  result=caesar(input,caesarShift,!encode);break;
+        case'Vigenère':result=vigenere(input,vigKey.toUpperCase().replace(/[^A-Z]/g,'')||'KEY',!encode);break;
+        case'Atbash':  result=atbash(input);break;
+        case'Base32':  result=encode?toBase32(input):fromBase32(input);break;
+        case'Morse':   result=encode?toMorse(input):fromMorse(input);break;
+        case'Binary':  result=encode?toBin(input):fromBin(input);break;
+        case'Hex':     result=encode?toHex(input):fromHex(input);break;
+        case'Base64':
+          if(encode){result=btoa(unescape(encodeURIComponent(input)));}
+          else{try{result=decodeURIComponent(escape(atob(input.trim())));}catch(e){throw new Error('Invalid Base64 input');}}
+          break;
+        case'Base64 URI':
+          if(encode){result='data:text/html;base64,'+btoa(unescape(encodeURIComponent(input)));}
+          else{const m=input.trim().match(/^data:[^,]*?(;base64)?,(.*)$/s);if(!m)throw new Error('Not a valid data URI');result=m[1]===';base64'?decodeURIComponent(escape(atob(m[2]))):decodeURIComponent(m[2]);}
+          break;
+      }
+      outputTA.value=result;
+      statusBar.textContent=(encode?'ENCODED':'DECODED')+' WITH '+activeCipher.toUpperCase()+' — '+result.length+' CHARS';
+    }catch(e){outputTA.value='';statusBar.textContent='ERROR: '+e.message;}
+  }
+
+  function swapIO(){inputTA.value=outputTA.value;outputTA.value='';statusBar.textContent='INPUT/OUTPUT SWAPPED';}
+
+  // File upload button (shown only for Base64 modes)
+  const ulBtn=mkActBtn('[ UPLOAD FILE ]',()=>{
+    const inp=document.createElement('input');inp.type='file';
+    inp.onchange=e=>{const f=e.target.files[0];if(f)encodeFile(f);};
+    inp.click();
+  });
+  ulBtn.style.display='none';
+  actionBar.appendChild(ulBtn);
+
+  function encodeFile(file){
+    const r=new FileReader();
+    r.onload=()=>{
+      const b64=r.result.split(',')[1];
+      inputTA.value=b64;
+      statusBar.textContent='FILE LOADED: '+file.name.toUpperCase()+' ('+Math.round(file.size/1024)+' KB)';
+    };
+    r.readAsDataURL(file);
+  }
+
+  // Drag & drop on input pane for Base64 modes
+  inputTA.addEventListener('dragover',e=>{
+    if(activeCipher==='Base64'||activeCipher==='Base64 URI'){e.preventDefault();inputTA.style.background='#0b1a0b';inputTA.style.boxShadow='inset 0 0 0 2px #0f0';}
+  });
+  inputTA.addEventListener('dragleave',()=>{inputTA.style.background='#050505';inputTA.style.boxShadow='';});
+  inputTA.addEventListener('drop',e=>{
+    e.preventDefault();inputTA.style.background='#050505';inputTA.style.boxShadow='';
+    if(activeCipher==='Base64'||activeCipher==='Base64 URI'){const f=e.dataTransfer.files[0];if(f)encodeFile(f);}
+  });
+
+  const _patchedSelect=name=>{
+    selectCipher(name);
+    ulBtn.style.display=(name==='Base64'||name==='Base64 URI')?'':'none';
+  };
+  ciphers.forEach(name=>{ cipherBtns[name].onclick=()=>_patchedSelect(name); });
+  _patchedSelect('ROT13');
+}
+
+/* ══════════════════ WEATHER TERMINAL ══════════════════ */
+function showWeather(goBack){
+  if(!goBack)goBack=showMenu;
+  const fromTerminal=bindEscIfTerminal(goBack);
+  clearBody();
+
+  _probeNetwork(
+    ()=>_launchWeather(goBack,fromTerminal),
+    ()=>showFailScreen('NETWORK UNAVAILABLE','Weather requires an internet connection.',goBack,()=>{clearBody();_launchWeather(goBack,fromTerminal);})
+  );
+}
+
+function _launchWeather(goBack,fromTerminal){
+  clearBody();
+  const page=document.createElement('div');
+  page.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;font-family:monospace;color:#0f0;';
+
+  /* ── HEADER ── */
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;gap:14px;padding:0 16px;height:48px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  hdr.innerHTML='<span style="font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);">WEATHER<span style="font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;">ATMOSPHERIC DATA // DATA OS</span></span>';
+  const badge=document.createElement('div');
+  badge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;';
+  badge.textContent='v1.0';
+  const hdrRight=document.createElement('div');
+  hdrRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:10px;';
+  if(!fromTerminal){
+    const exitBtn=document.createElement('button');
+    exitBtn.textContent='[ EXIT ]';
+    exitBtn.style.cssText='background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    exitBtn.onmouseover=()=>{exitBtn.style.background='rgba(255,85,85,0.1)';exitBtn.style.borderColor='#f55';};
+    exitBtn.onmouseout=()=>{exitBtn.style.background='#000';exitBtn.style.borderColor='rgba(255,85,85,0.4)';};
+    exitBtn.onclick=goBack;
+    hdrRight.appendChild(exitBtn);
+  }
+  hdr.appendChild(badge);hdr.appendChild(hdrRight);
+
+  /* ── BODY ── */
+  const body=document.createElement('div');
+  body.style.cssText='flex:1;display:flex;overflow:hidden;';
+
+  /* ── SIDEBAR ── */
+  const sb=document.createElement('div');
+  sb.style.cssText='width:220px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;';
+  const sbHdr=document.createElement('div');
+  sbHdr.style.cssText='padding:10px 14px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);text-transform:uppercase;';
+  sbHdr.textContent='LOCATIONS';
+  const sbScroll=document.createElement('div');
+  sbScroll.style.cssText='flex:1;overflow-y:auto;padding:14px;';
+
+  const savedLabel=document.createElement('span');
+  savedLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;';
+  savedLabel.textContent='SAVED';
+  sbScroll.appendChild(savedLabel);
+
+  const savedCard=document.createElement('div');
+  savedCard.style.cssText='margin-bottom:16px;';
+
+  const presets=['New York','London','Tokyo','Sydney','Los Angeles','Paris'];
+  presets.forEach(city=>{
+    const btn=document.createElement('button');
+    btn.className='app-sb-btn';
+    btn.textContent=city;
+    btn.onclick=()=>{locationInput.value=city;fetchWeather(city);};
+    savedCard.appendChild(btn);
+  });
+  sbScroll.appendChild(savedCard);
+
+  const div1=document.createElement('div');
+  div1.style.cssText='height:1px;background:rgba(0,255,0,0.15);margin:12px 0;';
+  sbScroll.appendChild(div1);
+
+  const unitsLabel=document.createElement('span');
+  unitsLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;';
+  unitsLabel.textContent='UNITS';
+  sbScroll.appendChild(unitsLabel);
+
+  const unitsCard=document.createElement('div');
+  unitsCard.style.cssText='margin-bottom:16px;';
+  let activeUnit='metric';
+  const unitBtns={};
+  [['metric','CELSIUS'],['imperial','FAHRENHEIT']].forEach(([key,label])=>{
+    const b=document.createElement('button');
+    b.className='app-sb-btn';
+    b.textContent=label;
+    b._setActive=on=>{ b.className=on?'app-sb-btn active':'app-sb-btn'; };
+    b.onclick=()=>{
+      activeUnit=key;
+      Object.entries(unitBtns).forEach(([k,btn])=>btn._setActive(k===key));
+      if(locationInput.value.trim())fetchWeather(locationInput.value.trim());
+    };
+    unitBtns[key]=b;
+    unitsCard.appendChild(b);
+  });
+  unitBtns['metric']._setActive(true);
+  unitBtns['imperial']._setActive(false);
+  sbScroll.appendChild(unitsCard);
+
+  sb.appendChild(sbHdr);sb.appendChild(sbScroll);
+
+  /* ── MAIN ── */
+  const main=document.createElement('div');
+  main.style.cssText='flex:1;display:flex;flex-direction:column;overflow:hidden;background:#020202;';
+
+  const searchBar=document.createElement('div');
+  searchBar.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  const locationInput=document.createElement('input');
+  locationInput.type='text';locationInput.placeholder='enter city name or coordinates...';
+  locationInput.spellcheck=false;locationInput.autocomplete='off';
+  locationInput.style.cssText='flex:1;background:#0d0d0d;border:1px solid rgba(0,255,0,0.2);color:#0f0;font-family:monospace;font-size:13px;padding:7px 10px;outline:none;transition:border-color 0.15s;';
+  locationInput.onfocus=()=>locationInput.style.borderColor='#0f0';
+  locationInput.onblur=()=>locationInput.style.borderColor='rgba(0,255,0,0.2)';
+
+  function mkBtn(txt,fn){
+    const b=document.createElement('button');b.textContent=txt;
+    b.style.cssText='background:transparent;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:12px;padding:6px 14px;letter-spacing:2px;cursor:pointer;white-space:nowrap;';
+    b.onmouseover=()=>{b.style.background='rgba(0,255,0,0.1)';b.style.borderColor='#0f0';};
+    b.onmouseout=()=>{b.style.background='transparent';b.style.borderColor='rgba(0,255,0,0.4)';};
+    b.onclick=fn;return b;
+  }
+
+  const goBtn=mkBtn('[ FETCH ]',()=>fetchWeather(locationInput.value.trim()));
+  const locBtn=mkBtn('[ MY LOCATION ]',geoLocate);
+  searchBar.appendChild(locationInput);searchBar.appendChild(goBtn);searchBar.appendChild(locBtn);
+
+  const results=document.createElement('div');
+  results.style.cssText='flex:1;overflow-y:auto;padding:20px 24px;';
+
+  const statusBar=document.createElement('div');
+  statusBar.style.cssText='padding:4px 16px;min-height:24px;display:flex;align-items:center;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;';
+  statusBar.textContent='ENTER A CITY TO BEGIN';
+
+  main.appendChild(searchBar);main.appendChild(results);main.appendChild(statusBar);
+  body.appendChild(sb);body.appendChild(main);
+  page.appendChild(hdr);page.appendChild(body);
+  document.body.appendChild(page);
+  locationInput.focus();
+  addCopyright();
+
+  const WX_ICONS={
+    0:'[ ☀ ] CLEAR SKY',1:'[ ☀ ] MAINLY CLEAR',2:'[ ⛅ ] PARTLY CLOUDY',3:'[ ☁ ] OVERCAST',
+    45:'[ 🌫 ] FOGGY',48:'[ 🌫 ] RIME FOG',
+    51:'[ 🌦 ] LIGHT DRIZZLE',53:'[ 🌦 ] DRIZZLE',55:'[ 🌧 ] HEAVY DRIZZLE',
+    61:'[ 🌧 ] LIGHT RAIN',63:'[ 🌧 ] RAIN',65:'[ 🌧 ] HEAVY RAIN',
+    71:'[ 🌨 ] LIGHT SNOW',73:'[ 🌨 ] SNOW',75:'[ 🌨 ] HEAVY SNOW',77:'[ 🌨 ] SNOW GRAINS',
+    80:'[ 🌦 ] LIGHT SHOWERS',81:'[ 🌧 ] SHOWERS',82:'[ 🌧 ] HEAVY SHOWERS',
+    85:'[ 🌨 ] SNOW SHOWERS',86:'[ 🌨 ] HEAVY SNOW SHOWERS',
+    95:'[ ⛈ ] THUNDERSTORM',96:'[ ⛈ ] THUNDERSTORM W/ HAIL',99:'[ ⛈ ] SEVERE THUNDERSTORM',
+  };
+
+  const ASCII_ART={
+    sun:  ['   \\   |   /   ','    .-\'\"\"-.    ',' --{  ☀  }-- ','    \\`-..-\'    ','   /   |   \\   '],
+    cloud:['               ','    .---.      ','  _(     ).    ','(___(__)__)    ','               '],
+    rain: ['  .---.        ','_(     ).      ','(___(____)     ','  \' \' \' \'      ','  \' \' \' \'      '],
+    snow: ['  .---.        ','_(     ).      ','(___(____)     ','  * * * *      ','  * * * *      '],
+    storm:['  .---.        ','_(     ).  ⚡  ','(___(____)     ','   ⚡  \'  \'     ','    \'  \'  \'     '],
+    fog:  ['               ','=== === ===    ','  === === ==   ','=== === ===    ','  === === ==   '],
+  };
+
+  function getArt(code){
+    if(code<=1)return ASCII_ART.sun;
+    if(code<=3)return ASCII_ART.cloud;
+    if(code<=48)return ASCII_ART.fog;
+    if(code<=65)return ASCII_ART.rain;
+    if(code<=77)return ASCII_ART.snow;
+    if(code<=82)return ASCII_ART.rain;
+    if(code<=86)return ASCII_ART.snow;
+    return ASCII_ART.storm;
+  }
+
+  function degToCompass(deg){const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];return dirs[Math.round(deg/22.5)%16];}
+
+  function renderWeather(data,name){
+    results.innerHTML='';
+    const c=data.current;
+    const isImperial=activeUnit==='imperial';
+    const temp=isImperial?(c.temperature_2m*9/5+32).toFixed(1):c.temperature_2m.toFixed(1);
+    const feels=isImperial?(c.apparent_temperature*9/5+32).toFixed(1):c.apparent_temperature.toFixed(1);
+    const unit=isImperial?'°F':'°C';
+    const windSpeed=isImperial?(c.wind_speed_10m*0.621371).toFixed(1):c.wind_speed_10m.toFixed(1);
+    const windUnit=isImperial?'mph':'km/h';
+    const code=c.weathercode??c.weather_code??0;
+    const desc=WX_ICONS[code]||'[ ? ] UNKNOWN';
+    const art=getArt(code);
+
+    // main card
+    const card=document.createElement('div');
+    card.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.25);margin-bottom:16px;position:relative;overflow:hidden;';
+    const cardTop=document.createElement('div');
+    cardTop.style.cssText='position:absolute;top:0;left:0;right:0;height:1px;background:#0f0;box-shadow:0 0 8px #0f0;';
+    card.appendChild(cardTop);
+
+    const cardBody=document.createElement('div');
+    cardBody.style.cssText='display:flex;gap:0;';
+
+    // art panel
+    const artPanel=document.createElement('div');
+    artPanel.style.cssText='padding:20px 24px;border-right:1px solid rgba(0,255,0,0.1);font-size:13px;line-height:1.7;color:#0a0;white-space:pre;flex-shrink:0;min-width:200px;display:flex;align-items:center;justify-content:center;';
+    artPanel.textContent=art.join('\n');
+
+    // stats panel
+    const statsPanel=document.createElement('div');
+    statsPanel.style.cssText='flex:1;padding:20px 24px;';
+
+    const locTitle=document.createElement('div');
+    locTitle.style.cssText='font-size:20px;letter-spacing:4px;color:#0f0;margin-bottom:4px;text-shadow:0 0 10px rgba(0,255,0,0.3);';
+    locTitle.textContent=name.toUpperCase();
+
+    const condDiv=document.createElement('div');
+    condDiv.style.cssText='font-size:11px;letter-spacing:2px;color:#0a0;margin-bottom:16px;';
+    condDiv.textContent=desc;
+
+    const tempDiv=document.createElement('div');
+    tempDiv.style.cssText='font-size:48px;letter-spacing:2px;color:#0f0;line-height:1;margin-bottom:4px;text-shadow:0 0 20px rgba(0,255,0,0.3);';
+    tempDiv.textContent=temp+unit;
+
+    const feelsDiv=document.createElement('div');
+    feelsDiv.style.cssText='font-size:11px;letter-spacing:2px;color:#0a0;margin-bottom:20px;';
+    feelsDiv.textContent='FEELS LIKE '+feels+unit;
+
+    [locTitle,condDiv,tempDiv,feelsDiv].forEach(el=>statsPanel.appendChild(el));
+
+    const grid=document.createElement('div');
+    grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;';
+
+    function makeStatBox(label,value){
+      const box=document.createElement('div');
+      box.style.cssText='background:#000;border:1px solid rgba(0,255,0,0.15);padding:8px 12px;';
+      box.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#0a0;margin-bottom:4px;">${label}</div><div style="font-size:14px;color:#0f0;letter-spacing:1px;">${value}</div>`;
+      return box;
+    }
+
+    grid.appendChild(makeStatBox('HUMIDITY',c.relative_humidity_2m+'%'));
+    grid.appendChild(makeStatBox('WIND',windSpeed+' '+windUnit+' '+degToCompass(c.wind_direction_10m||0)));
+    grid.appendChild(makeStatBox('PRECIP',(c.precipitation||0).toFixed(1)+' mm'));
+    grid.appendChild(makeStatBox('VISIBILITY',c.visibility!=null?(c.visibility/1000).toFixed(1)+' km':'N/A'));
+    grid.appendChild(makeStatBox('PRESSURE',(c.surface_pressure||c.pressure_msl||'N/A')+' hPa'));
+    grid.appendChild(makeStatBox('UV INDEX',c.uv_index??'N/A'));
+
+    statsPanel.appendChild(grid);
+    cardBody.appendChild(artPanel);cardBody.appendChild(statsPanel);
+    card.appendChild(cardBody);
+    results.appendChild(card);
+
+    // forecast
+    if(data.daily){
+      const d=data.daily;
+      const foreLabel=document.createElement('div');
+      foreLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;margin-bottom:10px;text-transform:uppercase;';
+      foreLabel.textContent='7-DAY FORECAST';
+      results.appendChild(foreLabel);
+
+      const foreRow=document.createElement('div');
+      foreRow.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:8px;';
+      const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+      for(let i=0;i<Math.min(7,d.time.length);i++){
+        const date=new Date(d.time[i]);
+        const dayName=days[date.getDay()];
+        const hi=isImperial?(d.temperature_2m_max[i]*9/5+32).toFixed(0):d.temperature_2m_max[i].toFixed(0);
+        const lo=isImperial?(d.temperature_2m_min[i]*9/5+32).toFixed(0):d.temperature_2m_min[i].toFixed(0);
+        const dc=d.weathercode?d.weathercode[i]:d.weather_code?.[i]??0;
+        const box=document.createElement('div');
+        box.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.15);padding:10px 6px;text-align:center;font-size:11px;';
+        const artLines=getArt(dc);
+        box.innerHTML=`<div style="color:#0a0;letter-spacing:2px;margin-bottom:6px;">${dayName}</div><div style="font-size:10px;color:#0a0;line-height:1.4;margin-bottom:6px;white-space:pre;">${artLines.slice(1,4).join('\n')}</div><div style="color:#0f0;font-size:13px;">${hi}${unit}</div><div style="color:#0a0;font-size:11px;">${lo}${unit}</div>`;
+        foreRow.appendChild(box);
+      }
+      results.appendChild(foreRow);
+    }
+
+    statusBar.textContent='DATA FETCHED — '+new Date().toLocaleTimeString().toUpperCase()+' // '+name.toUpperCase();
+  }
+
+  async function fetchWeather(city){
+    if(!city){statusBar.textContent='NO LOCATION SPECIFIED';return;}
+    statusBar.textContent='LOCATING: '+city.toUpperCase()+'...';
+    results.innerHTML='<div style="color:#0a0;letter-spacing:2px;font-size:12px;padding:20px;">[ FETCHING ATMOSPHERIC DATA... ]</div>';
+    try{
+      const geoRes=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+      const geoData=await geoRes.json();
+      if(!geoData.results||!geoData.results.length){statusBar.textContent='LOCATION NOT FOUND: '+city.toUpperCase();results.innerHTML='<div style="color:#f55;letter-spacing:2px;font-size:12px;padding:20px;">[ LOCATION NOT FOUND ]</div>';return;}
+      const loc=geoData.results[0];
+      statusBar.textContent='FETCHING DATA FOR '+loc.name.toUpperCase()+'...';
+      const wx=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weathercode,weather_code,wind_speed_10m,wind_direction_10m,visibility,surface_pressure,uv_index&daily=weathercode,weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`);
+      const wxData=await wx.json();
+      const displayName=`${loc.name}${loc.country_code?', '+loc.country_code:''}`;
+      renderWeather(wxData,displayName);
+    }catch(e){statusBar.textContent='ERROR: '+e.message;results.innerHTML=`<div style="color:#f55;letter-spacing:2px;font-size:12px;padding:20px;">[ ERROR: ${e.message} ]</div>`;}
+  }
+
+  function geoLocate(){
+    if(!navigator.geolocation){statusBar.textContent='GEOLOCATION NOT AVAILABLE';return;}
+    statusBar.textContent='ACQUIRING POSITION...';
+    results.innerHTML='<div style="color:#0a0;letter-spacing:2px;font-size:12px;padding:20px;">[ ACQUIRING GPS LOCK... ]</div>';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      statusBar.textContent='POSITION ACQUIRED — FETCHING DATA...';
+      try{
+        const wx=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weathercode,weather_code,wind_speed_10m,wind_direction_10m,visibility,surface_pressure,uv_index&daily=weathercode,weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`);
+        const wxData=await wx.json();
+        const revGeo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${lat},${lon}&count=1`).catch(()=>null);
+        let displayName=`${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        try{
+          const rg=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+          const rgd=await rg.json();
+          displayName=rgd.address?.city||rgd.address?.town||rgd.address?.village||rgd.address?.county||displayName;
+          if(rgd.address?.country_code)displayName+=', '+rgd.address.country_code.toUpperCase();
+        }catch(_){}
+        locationInput.value=displayName;
+        renderWeather(wxData,displayName);
+      }catch(e){statusBar.textContent='ERROR: '+e.message;}
+    },err=>{statusBar.textContent='GEOLOCATION DENIED: '+err.message;});
+  }
+
+  locationInput.onkeydown=e=>{if(e.key==='Enter')fetchWeather(locationInput.value.trim());};
+}
+
+/* ══════════════════ SYSTEM LOG VIEWER ══════════════════ */
+function showSysLog(goBack){
+  if(!goBack)goBack=showMenu;
+  const fromTerminal=bindEscIfTerminal(goBack);
+  clearBody();
+
+  const page=document.createElement('div');
+  page.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;font-family:monospace;color:#0f0;';
+
+  /* ── HEADER ── */
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;gap:14px;padding:0 16px;height:48px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  hdr.innerHTML='<span style="font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);">SYSLOG<span style="font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;">SYSTEM EVENT MONITOR // DATA OS</span></span>';
+  const badge=document.createElement('div');
+  badge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;';
+  badge.textContent='v1.0';
+  const hdrRight=document.createElement('div');
+  hdrRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:10px;';
+
+  // live indicator
+  const liveDot=document.createElement('div');
+  liveDot.style.cssText='width:7px;height:7px;border-radius:50%;background:#0f0;box-shadow:0 0 6px #0f0;animation:stress-pulse 1s infinite;flex-shrink:0;';
+  const liveLabel=document.createElement('span');
+  liveLabel.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;';
+  liveLabel.textContent='LIVE';
+  hdrRight.appendChild(liveDot);hdrRight.appendChild(liveLabel);
+
+  if(!fromTerminal){
+    const exitBtn=document.createElement('button');
+    exitBtn.textContent='[ EXIT ]';
+    exitBtn.style.cssText='background:#000;color:#f55;border:1px solid rgba(255,85,85,0.4);font-family:monospace;font-size:11px;padding:4px 10px;letter-spacing:2px;cursor:pointer;';
+    exitBtn.onmouseover=()=>{exitBtn.style.background='rgba(255,85,85,0.1)';exitBtn.style.borderColor='#f55';};
+    exitBtn.onmouseout=()=>{exitBtn.style.background='#000';exitBtn.style.borderColor='rgba(255,85,85,0.4)';};
+    exitBtn.onclick=goBack;
+    hdrRight.appendChild(exitBtn);
+  }
+  hdr.appendChild(badge);hdr.appendChild(hdrRight);
+
+  /* ── BODY ── */
+  const body=document.createElement('div');
+  body.style.cssText='flex:1;display:flex;overflow:hidden;';
+
+  /* ── SIDEBAR ── */
+  const sb=document.createElement('div');
+  sb.style.cssText='width:200px;flex-shrink:0;border-right:1px solid rgba(0,255,0,0.2);background:#0a0a0a;display:flex;flex-direction:column;overflow:hidden;';
+  const sbHdr=document.createElement('div');
+  sbHdr.style.cssText='padding:10px 14px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);text-transform:uppercase;';
+  sbHdr.textContent='FILTERS';
+  const sbScroll=document.createElement('div');
+  sbScroll.style.cssText='flex:1;overflow-y:auto;padding:14px;';
+
+  const levelLabel=document.createElement('span');
+  levelLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;';
+  levelLabel.textContent='LEVEL';
+  sbScroll.appendChild(levelLabel);
+
+  const levelCard=document.createElement('div');
+  levelCard.style.cssText='margin-bottom:16px;';
+
+  const levelFilters={log:true,warn:true,error:true,info:true};
+  const levelColors={log:'#0f0',warn:'#fa0',error:'#f55',info:'#4af'};
+  const levelBtns={};
+  Object.keys(levelFilters).forEach(lvl=>{
+    const btn=document.createElement('button');
+    btn.className='app-sb-tog';
+    const box=document.createElement('span');
+    box.className='tog-box';
+    box.style.color=levelColors[lvl];
+    box.textContent='[✓]';
+    const txt=document.createElement('span');
+    txt.textContent=lvl.toUpperCase();
+    txt.style.color=levelColors[lvl];
+    btn.appendChild(box);btn.appendChild(txt);
+    btn.onclick=()=>{
+      levelFilters[lvl]=!levelFilters[lvl];
+      const on=levelFilters[lvl];
+      btn.className=on?'app-sb-tog':'app-sb-tog off';
+      box.textContent=on?'[✓]':'[ ]';
+      applyFilters();
+    };
+    levelBtns[lvl]=btn;
+    levelCard.appendChild(btn);
+  });
+  sbScroll.appendChild(levelCard);
+
+  const div1=document.createElement('div');
+  div1.style.cssText='height:1px;background:rgba(0,255,0,0.15);margin:12px 0;';
+  sbScroll.appendChild(div1);
+
+  // counters
+  const countsLabel=document.createElement('span');
+  countsLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;';
+  countsLabel.textContent='COUNTS';
+  sbScroll.appendChild(countsLabel);
+
+  const countsCard=document.createElement('div');
+  countsCard.style.cssText='background:#050505;border:1px solid rgba(0,255,0,0.2);padding:10px 12px;';
+  sbScroll.appendChild(countsCard);
+
+  const countEls={};
+  Object.keys(levelColors).forEach(lvl=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+    row.innerHTML=`<span style="font-size:10px;color:${levelColors[lvl]};letter-spacing:1px;">${lvl.toUpperCase()}</span>`;
+    const num=document.createElement('span');
+    num.style.cssText=`font-size:13px;color:${levelColors[lvl]};`;
+    num.textContent='0';
+    countEls[lvl]=num;
+    row.appendChild(num);
+    countsCard.appendChild(row);
+  });
+
+  const div2=document.createElement('div');
+  div2.style.cssText='height:1px;background:rgba(0,255,0,0.15);margin:12px 0;';
+  sbScroll.appendChild(div2);
+
+  // options
+  let autoScroll=true;
+  const optLabel=document.createElement('span');
+  optLabel.style.cssText='font-size:9px;letter-spacing:3px;color:#0a0;text-transform:uppercase;margin-bottom:8px;display:block;padding:0 12px;';
+  optLabel.textContent='OPTIONS';
+  sbScroll.appendChild(optLabel);
+
+  const asStyle=document.createElement('style');
+  asStyle.textContent=`.as-opt{display:flex;align-items:center;gap:8px;margin:0 12px 16px;cursor:pointer;}.as-opt input{appearance:none;-webkit-appearance:none;width:13px;height:13px;border:1px solid rgba(0,255,0,0.3);background:transparent;cursor:pointer;position:relative;flex-shrink:0;}.as-opt input:checked{border-color:#0f0;background:rgba(0,255,0,0.08);}.as-opt input:checked::after{content:'';position:absolute;top:0px;left:3px;width:4px;height:7px;border-right:2px solid #0f0;border-bottom:2px solid #0f0;transform:rotate(45deg);}.as-opt span{font-family:monospace;font-size:11px;letter-spacing:2px;color:#0a0;text-transform:uppercase;}.as-opt input:checked+span{color:#0f0;}`;
+  document.head.appendChild(asStyle);
+  const asWrap=document.createElement('label');asWrap.className='as-opt';
+  const asCb=document.createElement('input');asCb.type='checkbox';asCb.checked=true;
+  const asLbl=document.createElement('span');asLbl.textContent='AUTO-SCROLL';
+  asWrap.appendChild(asCb);asWrap.appendChild(asLbl);
+  asCb.onchange=()=>{autoScroll=asCb.checked;};
+  sbScroll.appendChild(asWrap);
+
+  sb.appendChild(sbHdr);sb.appendChild(sbScroll);
+
+  /* ── MAIN ── */
+  const main=document.createElement('div');
+  main.style.cssText='flex:1;display:flex;flex-direction:column;overflow:hidden;background:#020202;';
+
+  // action bar
+  const actionBar=document.createElement('div');
+  actionBar.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+
+  const searchInput=document.createElement('input');
+  searchInput.type='text';searchInput.placeholder='filter logs...';
+  searchInput.style.cssText='flex:1;background:#0d0d0d;border:1px solid rgba(0,255,0,0.2);color:#0f0;font-family:monospace;font-size:12px;padding:5px 10px;outline:none;transition:border-color 0.15s;';
+  searchInput.onfocus=()=>searchInput.style.borderColor='#0f0';
+  searchInput.onblur=()=>searchInput.style.borderColor='rgba(0,255,0,0.2)';
+  searchInput.oninput=applyFilters;
+
+  function mkBtn(txt,fn){
+    const b=document.createElement('button');b.textContent=txt;
+    b.style.cssText='background:transparent;color:#0f0;border:1px solid rgba(0,255,0,0.4);font-family:monospace;font-size:11px;padding:5px 12px;letter-spacing:2px;cursor:pointer;white-space:nowrap;';
+    b.onmouseover=()=>{b.style.background='rgba(0,255,0,0.1)';b.style.borderColor='#0f0';};
+    b.onmouseout=()=>{b.style.background='transparent';b.style.borderColor='rgba(0,255,0,0.4)';};
+    b.onclick=fn;return b;
+  }
+
+  const clearLogsBtn=mkBtn('[ CLEAR ]',()=>{window._inspectLog.length=0;logRows={};logOut.innerHTML='';updateCounts();statusBar.textContent='LOG CLEARED';});
+  const exportBtn=mkBtn('[ EXPORT ]',()=>{
+    const txt=window._inspectLog.map(e=>`[${e.time}] [${e.level.toUpperCase()}] ${e.msg}`).join('\n');
+    const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);a.download='syslog.txt';a.click();
+    statusBar.textContent='LOG EXPORTED';
+  });
+  const scrollBottomBtn=mkBtn('[ BOTTOM ]',()=>logOut.scrollTop=logOut.scrollHeight);
+  [searchInput,clearLogsBtn,exportBtn,scrollBottomBtn].forEach(el=>actionBar.appendChild(el));
+
+  // log output
+  const logOut=document.createElement('div');
+  logOut.style.cssText='flex:1;overflow-y:auto;padding:0;';
+
+  // column header
+  const colHdr=document.createElement('div');
+  colHdr.style.cssText='display:flex;gap:0;padding:4px 16px;font-size:10px;color:#0a0;letter-spacing:2px;border-bottom:1px solid rgba(0,255,0,0.15);background:#0a0a0a;flex-shrink:0;';
+  colHdr.innerHTML='<span style="min-width:80px">TIME</span><span style="min-width:56px">LEVEL</span><span style="flex:1">MESSAGE</span>';
+
+  // status
+  const statusBar=document.createElement('div');
+  statusBar.style.cssText='padding:4px 16px;min-height:24px;display:flex;align-items:center;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;';
+  statusBar.textContent='MONITORING SYSTEM EVENTS';
+
+  main.appendChild(actionBar);main.appendChild(colHdr);main.appendChild(logOut);main.appendChild(statusBar);
+  body.appendChild(sb);body.appendChild(main);
+  page.appendChild(hdr);page.appendChild(body);
+  document.body.appendChild(page);
+  addCopyright();
+
+  let logRows={};
+
+  function updateCounts(){
+    const counts={log:0,warn:0,error:0,info:0};
+    window._inspectLog.forEach(e=>{ if(counts[e.level]!==undefined)counts[e.level]++; });
+    Object.entries(counts).forEach(([lvl,n])=>{ if(countEls[lvl])countEls[lvl].textContent=n; });
+  }
+
+  function makeLogRow(entry){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:0;padding:3px 16px;border-bottom:1px solid rgba(0,255,0,0.05);font-size:12px;line-height:1.6;';
+    row.onmouseover=()=>row.style.background='rgba(0,255,0,0.03)';
+    row.onmouseout=()=>row.style.background='transparent';
+
+    const timeEl=document.createElement('span');
+    timeEl.style.cssText='min-width:80px;color:#0a0;font-size:11px;padding-top:1px;flex-shrink:0;';
+    timeEl.textContent=entry.time;
+
+    const lvlEl=document.createElement('span');
+    lvlEl.style.cssText=`min-width:56px;font-size:11px;padding-top:1px;flex-shrink:0;color:${levelColors[entry.level]||'#0f0'};`;
+    lvlEl.textContent=entry.level.toUpperCase();
+
+    const msgEl=document.createElement('span');
+    msgEl.style.cssText=`flex:1;color:${levelColors[entry.level]||'#0f0'};word-break:break-all;`;
+    msgEl.textContent=entry.msg;
+
+    row.appendChild(timeEl);row.appendChild(lvlEl);row.appendChild(msgEl);
+    return row;
+  }
+
+  function applyFilters(){
+    const query=searchInput.value.trim().toLowerCase();
+    Array.from(logOut.children).forEach(row=>{
+      const lvl=row.dataset.level;
+      const msg=row.dataset.msg||'';
+      const show=levelFilters[lvl]!==false&&(!query||msg.includes(query));
+      row.style.display=show?'':'none';
+    });
+    const vis=Array.from(logOut.children).filter(r=>r.style.display!=='none').length;
+    statusBar.textContent=`SHOWING ${vis} / ${window._inspectLog.length} EVENTS`;
+  }
+
+  function addRow(entry){
+    const row=makeLogRow(entry);
+    row.dataset.level=entry.level;
+    row.dataset.msg=(entry.msg||'').toLowerCase();
+    logOut.appendChild(row);
+    if(autoScroll)logOut.scrollTop=logOut.scrollHeight;
+    updateCounts();
+    applyFilters();
+  }
+
+  // replay existing
+  window._inspectLog.forEach(entry=>addRow(entry));
+  updateCounts();
+  _ilog('info','SysLog viewer opened');
+  _ilog('log','Monitoring '+Object.keys(levelFilters).join(', ').toUpperCase()+' events');
+
+  // live feed - _ilog already pushes to _inspectLog, we just need to render new rows
+  window._inspectAddLog=(level,msg)=>{
+    const entry={level,msg,time:new Date().toLocaleTimeString()};
+    addRow(entry);
+  };
+
+  // cleanup when leaving
+  const mo=new MutationObserver(()=>{
+    if(!document.body.contains(logOut)){window._inspectAddLog=null;mo.disconnect();}
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+
+  if(!window._inspectLog.length){
+    statusBar.textContent='NO EVENTS YET — EVENTS WILL APPEAR AS THEY OCCUR';
+  }
+}
+
+
 function showGitFetch(goBack){
   if(!goBack)goBack=showMenu;
   const fromTerminal=!!(window._termPrint);
@@ -2619,7 +3488,6 @@ function showMenu(){
   const apps=[
     ["HTML Editor",   ()=>showEditor("",showMenu)],
     ["Browser",    ()=>showURLPage(showMenu)],
-    ["Base64 Tool",   ()=>showBase64(showMenu)],
     ["System Usage",    ()=>showStress(showMenu)],
     ["Draw / Paint",  ()=>showDraw(showMenu)],
     ["Pixel Art",     ()=>showPixelArt(showMenu)],
@@ -2633,6 +3501,9 @@ function showMenu(){
     ["Music Player",   ()=>launchMusicPlayer(showMenu)],
     ["WebRTC",         ()=>showWebRTC(showMenu)],
     ["GitFetch",       ()=>showGitFetch(showMenu)],
+    ["Cipher",         ()=>showCipher(showMenu)],
+    ["Weather",        ()=>showWeather(showMenu)],
+    ["SysLog",         ()=>showSysLog(showMenu)],
   ];
 
   apps.forEach(([l,f])=>{
@@ -2932,8 +3803,6 @@ function _launchURLPage(goBack,fromTerminal){
   sbScroll.appendChild(qlLabel);
 
   const qlCard=document.createElement("div");qlCard.className="url-page-sb-card";
-  const qlCardTop=document.createElement("div");qlCardTop.className="url-page-sb-card-top";
-  qlCard.appendChild(qlCardTop);
   qlLinks.forEach(({label,url})=>{
     const btn=document.createElement("button");btn.className="url-page-ql-item";btn.textContent=label;
     btn.onclick=()=>showURLMode(url,goBack);
@@ -2948,7 +3817,7 @@ function _launchURLPage(goBack,fromTerminal){
   sbScroll.appendChild(infoLabel);
 
   const infoCard=document.createElement("div");infoCard.className="url-page-sb-card";
-  infoCard.style.cssText+="font-size:10px;color:#0a0;letter-spacing:1px;line-height:1.9;";
+  infoCard.style.cssText="padding:10px 12px;font-size:10px;color:#0a0;letter-spacing:1px;line-height:1.9;";
   infoCard.innerHTML='ENTER A URL TO LOAD IT<br>IN THE BROWSER FRAME.<br><br>ENTER ANY OTHER TEXT<br>TO SEARCH WIKIPEDIA.';
   sbScroll.appendChild(infoCard);
 
@@ -3095,42 +3964,6 @@ function showURLMode(initialURL,goBack){
   } // end _doLaunchURLMode
 }
 
-function showBase64(goBack){
-  if(!goBack)goBack=showMenu;
-  clearBody();
-  const wrap=document.createElement("div");wrap.className="b64-wrap";
-  const ta=document.createElement("textarea");ta.className="b64-ta";
-  ta.placeholder="Paste text / HTML / Base64 here — or drag & drop any file to encode it...";
-  function encodeFile(file){const r=new FileReader();r.onload=()=>{ta.value=r.result.split(",")[1];};r.readAsDataURL(file);}
-  ta.addEventListener("dragover",e=>{e.preventDefault();ta.classList.add("drag-over");});
-  ta.addEventListener("dragleave",()=>ta.classList.remove("drag-over"));
-  ta.addEventListener("drop",e=>{e.preventDefault();ta.classList.remove("drag-over");const f=e.dataTransfer.files[0];if(f)encodeFile(f);});
-  wrap.appendChild(ta);
-  document.body.appendChild(wrap);
-  const tb=document.createElement("div");tb.className="toolbar";
-  const encBtn=makeBtn("Encode",()=>{try{ta.value=btoa(unescape(encodeURIComponent(ta.value)));}catch(e){alert("Encode failed: "+e.message);}});
-  const decBtn=makeBtn("Decode",()=>{
-    try{
-      let val=ta.value.trim();
-      const m=val.match(/^data:[^,]*?(;base64)?,(.*)$/s);
-      if(m){val=m[1]===";base64"?m[2]:decodeURIComponent(m[2]);if(!m[1]){ta.value=val;return;}}
-      ta.value=decodeURIComponent(escape(atob(val)));
-    }catch(e){alert("Decode failed: "+e.message);}
-  });
-  const uriBtn=makeBtn("URI",()=>{try{ta.value="data:text/html;base64,"+btoa(unescape(encodeURIComponent(ta.value)));}catch(e){alert("URI encode failed: "+e.message);}});
-  const copyBtn=makeBtn("Copy",()=>{navigator.clipboard.writeText(ta.value).then(()=>{copyBtn.textContent="Copied!";setTimeout(()=>copyBtn.textContent="Copy",1500);}).catch(()=>alert("Copy failed."));});
-  const ulBtn=makeBtn("Upload",()=>{const input=document.createElement("input");input.type="file";input.onchange=e=>{const f=e.target.files[0];if(f)encodeFile(f);};input.click();});
-  const dlBtn=makeBtn("Download",()=>{
-    const content=ta.value;
-    if(!content){alert("Nothing to download.");return;}
-    const blob=new Blob([content],{type:"text/plain"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="base64_output.txt";a.click();
-  });
-  const b64btns=bindEscIfTerminal(goBack)?[encBtn,decBtn,uriBtn,copyBtn,ulBtn,dlBtn]:[makeBtn("Back",goBack),encBtn,decBtn,uriBtn,copyBtn,ulBtn,dlBtn];
-  b64btns.forEach(b=>tb.appendChild(b));
-  document.body.appendChild(tb);
-  addCopyright();
-}
 
 let stressWorkers=[],stressRunning=false,totalOps=0;
 /* ── shared stop helper (used by tab teardown) ── */
@@ -4519,8 +5352,8 @@ function launchExplorer(startPath,goBack){
                 "mspaint.exe":    ()=>showDraw(returnToExplorer),
                 "htmleditor.exe": ()=>showEditor("",returnToExplorer),
                 "browser.exe":  ()=>showURLPage(returnToExplorer),
-                "base64.exe":     ()=>showBase64(returnToExplorer),
-                "sysusage.exe":     ()=>showStress(returnToExplorer),
+                "base64.exe":     ()=>showCipher(returnToExplorer),
+                "stress.exe":     ()=>showStress(returnToExplorer),
                 "pixelart.exe":   ()=>showPixelArt(returnToExplorer),
                 "ascii.exe":      ()=>showASCII(returnToExplorer),
                 "hacker.exe":     ()=>showHackerTyper(returnToExplorer),
@@ -4577,7 +5410,7 @@ const fs={
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
       "sysusage.exe":"(executable)",
-      "readme.txt":"Data OS 10.5.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  sysusage.exe     - System Usage Monitor\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "readme.txt":"Data OS 11.0.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\nsysusage.exe  - System Usage Monitor\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - System Usage Monitor\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -4603,7 +5436,7 @@ const fs={
       "htmleditor.exe":"(executable)",
       "browser.exe":"(executable)",
       "base64.exe":"(executable)",
-      "sysusage.exe":"(executable)",
+      "stress.exe":"(executable)",
       "paint.exe":"(executable)",
       "pixelart.exe":"(executable)",
       "ascii.exe":"(executable)",
@@ -4651,8 +5484,8 @@ function canonicalizePath(path){
     "mspaint.exe":   ()=>showDraw(showMenu),
     "htmleditor.exe":()=>showEditor("",showMenu),
     "browser.exe": ()=>showURLPage(showMenu),
-    "base64.exe":    ()=>showBase64(showMenu),
-    "sysusage.exe":    ()=>showStress(showMenu),
+    "base64.exe":    ()=>showCipher(showMenu),
+    "stress.exe":    ()=>showStress(showMenu),
     "pixelart.exe":  ()=>showPixelArt(showMenu),
     "ascii.exe":     ()=>showASCII(showMenu),
     "hacker.exe":    ()=>showHackerTyper(showMenu),
@@ -4726,7 +5559,7 @@ function showTerminal(goBack){
     "htmleditor.exe":"C:\\Users\\anonymous\\Apps",
     "browser.exe":"C:\\Users\\anonymous\\Apps",
     "base64.exe":"C:\\Users\\anonymous\\Apps",
-    "sysusage.exe":"C:\\Users\\anonymous\\Apps",
+    "stress.exe":"C:\\Users\\anonymous\\Apps",
     "pixelart.exe":"C:\\Users\\anonymous\\Apps",
     "ascii.exe":"C:\\Users\\anonymous\\Apps",
     "hacker.exe":"C:\\Users\\anonymous\\Apps",
@@ -4745,18 +5578,21 @@ function showTerminal(goBack){
     "paint.exe":()=>{print("Opening Paint...");setTimeout(()=>showDraw(showTerminal),100);},
     "explorer.exe":()=>launchExplorer("C:\\Users\\anonymous"),
     "chrome.exe":()=>{print("Google Chrome is already running.");},
-    "cmd.exe":()=>{print("Microsoft Windows [Version 10.5.09245.4894]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
+    "cmd.exe":()=>{print("Microsoft Windows [Version 11.0.0.0000]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
     "sysssage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
     "htmleditor.exe":()=>{print("Opening HTML Editor...");setTimeout(()=>showEditor("",showTerminal),100);},
     "browser.exe":()=>{print("Opening Browser...");setTimeout(()=>showURLPage(showTerminal),100);},
-    "base64.exe":()=>{print("Opening Base64 Tool...");setTimeout(()=>showBase64(showTerminal),100);},
-    "sysusage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
+    "base64.exe":()=>{print("Opening Cipher Tool... ESC to exit.");setTimeout(()=>showCipher(showTerminal),100);},
+    "stress.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
     "pixelart.exe":()=>{print("Opening Pixel Art Editor...");setTimeout(()=>showPixelArt(showTerminal),100);},
     "ascii.exe":()=>{print("Opening ASCII Art Maker...");setTimeout(()=>showASCII(showTerminal),100);},
     "hacker.exe":()=>{print("Opening Hacker Typer...");setTimeout(()=>showHackerTyper(showTerminal),100);},
     "music.exe":()=>{print("Opening Music Player... ESC to exit.");setTimeout(()=>launchMusicPlayer(showTerminal),100);},
     "webrtc.exe":()=>{print("Opening WebRTC... ESC to exit.");setTimeout(()=>showWebRTC(showTerminal),100);},
     "gitfetch.exe":()=>{print("Opening GitFetch... ESC to exit.");setTimeout(()=>showGitFetch(showTerminal),100);},
+    "cipher.exe":()=>{print("Opening Cipher Tool... ESC to exit.");setTimeout(()=>showCipher(showTerminal),100);},
+    "weather.exe":()=>{print("Opening Weather Terminal... ESC to exit.");setTimeout(()=>showWeather(showTerminal),100);},
+    "syslog.exe":()=>{print("Opening SysLog Viewer... ESC to exit.");setTimeout(()=>showSysLog(showTerminal),100);},
 
     "EZ-Mode.html":()=>{print("Launching EZ-Mode...");setTimeout(()=>showMenu(),300);},
   };
@@ -4979,7 +5815,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 10.5.0]");
+        print("Data OS Terminal [Version 11.0.0]");
         print("");
         break;
 
@@ -5002,7 +5838,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                10.5.0 Build 19246");
+        print("OS Version:                11.0.0 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -5191,7 +6027,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 10.5.0`);
+  print(`DATA OS 11.0.0`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
@@ -5232,7 +6068,7 @@ function showInspect(){
 
   const tabBar=document.createElement("div");tabBar.className="inspect-tabs";
 
-  const TABS=["Elements","Console","Network","Performance","Storage","Info","Source"];
+  const TABS=["Elements","Console","Network","Performance","Storage","Info"];
   const panels={};
   const tabEls={};
 
