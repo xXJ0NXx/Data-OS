@@ -6,7 +6,7 @@
 <style>
 html,body{margin:0;padding:0;height:100%;background:#000;color:#0f0;font-family:monospace;overflow:hidden;}
 iframe{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;border:none!important;z-index:3;}
-#editor-ta{position:fixed;inset:0;width:100vw;height:100vh;border:none;background:#111;color:#0f0;padding:20px;box-sizing:border-box;font-family:monospace;font-size:14px;z-index:3;}
+#editor-ta{position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;background:#111;color:#0f0;padding:20px;box-sizing:border-box;font-family:monospace;font-size:14px;z-index:3;transition:width 0.2s ease;}
 .inspect-panel textarea{padding:4px 6px !important;}
 .toolbar{position:fixed;top:10px;right:10px;z-index:10;}
 button{padding:8px 14px;margin-left:5px;font-size:14px;cursor:pointer;background:rgba(0,0,0,0.2);color:#0f0;border:1px solid rgba(0,255,0,0.3);font-family:monospace;}
@@ -370,7 +370,7 @@ function showStartup(){
   clearBody();
   const page=document.createElement("div");page.className="startup-page";
   const title=document.createElement("div");title.className="startup-title";title.textContent="DATA OS";
-  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v11.0.0";
+  const sub=document.createElement("div");sub.className="startup-subtitle";sub.textContent="v11.1.0";
   const btns=document.createElement("div");btns.className="startup-buttons";
   const ezBtn=document.createElement("button");ezBtn.className="startup-btn";ezBtn.textContent="EZ-MODE";
   ezBtn.onclick=showMenu;
@@ -2625,7 +2625,7 @@ function showCipher(goBack){
   titleWrap.innerHTML='<span style="font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);">CIPHER<span style="font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;">ENCODE / DECODE // DATA OS</span></span>';
   const badge=document.createElement('div');
   badge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;';
-  badge.textContent='v1.0';
+  badge.textContent='v2.0';
   const hdrRight=document.createElement('div');
   hdrRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:10px;';
   if(!fromTerminal){
@@ -3639,118 +3639,273 @@ function showGames(){
 /* ══════════════════ ORIGINAL PAGES ══════════════════ */
 function showEditor(existingHTML, goBack){
   if(!goBack)goBack=showMenu;
+  const fromTerminal=bindEscIfTerminal(goBack);
   clearBody();
 
-  const ta=document.createElement("textarea");
-  ta.id="editor-ta";
-  ta.value=(typeof existingHTML==="string")?existingHTML:"";
-  ta.placeholder="Write or paste HTML here...";
-
-  // ── console panel (hidden off-screen right) ──
+  let activeIframe=null;
   let consoleOpen=false;
-  const consolePanel=document.createElement("div");
-  consolePanel.style.cssText="position:fixed;top:0;right:-340px;width:330px;height:100vh;background:#0a0a0a;border-left:1px solid rgba(0,255,0,0.35);z-index:99;display:flex;flex-direction:column;transition:right 0.25s ease;font-family:monospace;";
-  const cHead=document.createElement("div");
-  cHead.style.cssText="padding:6px 10px;background:#111;border-bottom:1px solid rgba(0,255,0,0.25);font-size:11px;color:#0a0;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;";
-  cHead.innerHTML="<span>CONSOLE</span>";
-  const cCloseBtn=document.createElement("button");
-  cCloseBtn.textContent="X";
-  cCloseBtn.style.cssText="padding:2px 8px;font-size:11px;background:transparent;color:#f55;border:1px solid rgba(255,80,80,0.4);cursor:pointer;font-family:monospace;margin:0;";
-  cCloseBtn.onclick=()=>{
-    consoleOpen=false;
-    consolePanel.style.right="-340px";
-    ta.style.right="0";
-    consoleBtn.textContent="Console";
-  };
-  cHead.appendChild(cCloseBtn);
-  const logOut=document.createElement("div");
-  logOut.style.cssText="flex:1;overflow-y:auto;padding:6px;";
-  consolePanel.appendChild(cHead);
-  consolePanel.appendChild(logOut);
 
-  function addEditorLog(type,text){
-    const colors={error:"#f55",warn:"#fa0",info:"#4af",log:"#0f0",network:"#c4f"};
-    const borders={error:"#f55",warn:"#fa0",info:"#4af",log:"rgba(0,255,0,0.25)",network:"#c4f"};
-    const row=document.createElement("div");
-    row.style.cssText="padding:3px 6px;margin-bottom:3px;border-radius:2px;font-size:12px;word-break:break-all;white-space:pre-wrap;color:"+(colors[type]||"#0f0")+";border-left:3px solid "+(borders[type]||"#0f0")+";background:rgba(0,0,0,0.3);line-height:1.5;";
-    const d=new Date();
-    const ts=d.toTimeString().split(" ")[0]+"."+String(d.getMilliseconds()).padStart(3,"0");
-    const tspan=document.createElement("span");
-    tspan.style.cssText="color:#0a0;margin-right:6px;font-size:11px;";
-    tspan.textContent=ts;
-    row.appendChild(tspan);
-    row.appendChild(document.createTextNode(text));
-    logOut.appendChild(row);
-    logOut.scrollTop=logOut.scrollHeight;
+  const page=document.createElement('div');
+  page.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;background:#000;z-index:5;font-family:monospace;color:#0f0;';
+
+  /* ── HEADER ── */
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;gap:14px;padding:0 16px;height:48px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  hdr.innerHTML='<span style="font-size:15px;font-weight:bold;letter-spacing:4px;color:#0f0;text-shadow:0 0 10px rgba(0,255,0,0.4);">HTML EDITOR<span style="font-size:9px;display:block;letter-spacing:3px;color:#0a0;margin-top:-2px;">CODE & PREVIEW // DATA OS</span></span>';
+  const badge=document.createElement('div');
+  badge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;border:1px solid rgba(0,255,0,0.2);padding:2px 8px;';
+  badge.textContent='v2.0';
+  const statusBadge=document.createElement('div');
+  statusBadge.style.cssText='font-size:10px;letter-spacing:2px;color:#0a0;margin-left:8px;';
+  statusBadge.textContent='';
+  const hdrRight=document.createElement('div');
+  hdrRight.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;';
+
+  function mkHdrBtn(txt,fn,red){
+    const b=document.createElement('button');b.textContent=txt;
+    const bc=red?'rgba(255,85,85,0.4)':'rgba(0,255,0,0.4)';
+    const hc=red?'rgba(255,85,85,0.1)':'rgba(0,255,0,0.1)';
+    const tc=red?'#f55':'#0f0';
+    b.style.cssText=`background:transparent;color:${red?'#f55':'#0f0'};border:1px solid ${bc};font-family:monospace;font-size:11px;padding:4px 12px;letter-spacing:2px;cursor:pointer;white-space:nowrap;`;
+    b.onmouseover=()=>{b.style.background=hc;b.style.borderColor=tc;};
+    b.onmouseout=()=>{b.style.background='transparent';b.style.borderColor=bc;};
+    b.onclick=fn;return b;
   }
 
-  window.addEventListener("message",function onEditorLog(e){
-    if(e.data&&e.data.__rclog){
-      addEditorLog(e.data.type,e.data.text);
+  const renderBtn=mkHdrBtn('[ RENDER ]',doRender);
+  const consoleBtn=mkHdrBtn('[ CONSOLE ]',toggleConsole);
+  const dlBtn=mkHdrBtn('[ DOWNLOAD ]',()=>{const blob=new Blob([ta.value],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='index.html';a.click();});
+  const ulBtn=mkHdrBtn('[ UPLOAD ]',()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.html,.htm';inp.onchange=e=>{const r=new FileReader();r.onload=()=>{ta.value=r.result;updateStatus();};r.readAsText(e.target.files[0]);};inp.click();});
+  const wrapBtn=mkHdrBtn('[ WRAP ]',toggleWrap);
+  [wrapBtn,dlBtn,ulBtn,consoleBtn,renderBtn].forEach(b=>hdrRight.appendChild(b));
+  if(!fromTerminal){
+    const exitBtn=mkHdrBtn('[ EXIT ]',goBack,true);
+    hdrRight.appendChild(exitBtn);
+  }
+  hdr.appendChild(badge);hdr.appendChild(statusBadge);hdr.appendChild(hdrRight);
+
+  /* ── BODY ── */
+  const body=document.createElement('div');
+  body.style.cssText='flex:1;display:flex;overflow:hidden;position:relative;';
+
+  /* ── EDITOR PANE ── */
+  const editorPane=document.createElement('div');
+  editorPane.style.cssText='flex:1;display:flex;overflow:hidden;min-width:0;';
+
+  // line numbers
+  const lineNums=document.createElement('div');
+  lineNums.style.cssText='width:48px;flex-shrink:0;background:#050505;border-right:1px solid rgba(0,255,0,0.1);overflow:hidden;padding:14px 0;text-align:right;font-size:13px;line-height:1.6;color:rgba(0,255,0,0.25);font-family:monospace;user-select:none;';
+
+  const ta=document.createElement('textarea');
+  ta.value=(typeof existingHTML==='string')?existingHTML:'';
+  ta.placeholder='<!-- write HTML here -->\n<html>\n  <body>\n    <h1>Hello World</h1>\n  </body>\n</html>';
+  ta.spellcheck=false;ta.autocomplete='off';ta.autocorrect='off';ta.autocapitalize='off';
+  ta.style.cssText='flex:1;background:#080808;color:#0f0;border:none;resize:none;font-family:monospace;font-size:13px;padding:14px 16px;outline:none;line-height:1.6;box-sizing:border-box;overflow-y:auto;white-space:pre;overflow-wrap:normal;';
+  ta.wrap='off';
+
+  editorPane.appendChild(lineNums);editorPane.appendChild(ta);
+
+  /* ── PREVIEW PANE (hidden until render) ── */
+  const previewPane=document.createElement('div');
+  previewPane.style.cssText='width:0;flex-shrink:0;border-left:1px solid rgba(0,255,0,0.2);display:flex;flex-direction:column;overflow:hidden;transition:width 0.2s ease;';
+  const previewHdr=document.createElement('div');
+  previewHdr.style.cssText='padding:6px 12px;font-size:9px;letter-spacing:3px;color:#0a0;border-bottom:1px solid rgba(0,255,0,0.2);background:#0a0a0a;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;';
+  previewHdr.innerHTML='<span>PREVIEW</span>';
+  const closePreviewBtn=document.createElement('button');
+  closePreviewBtn.textContent='×';
+  closePreviewBtn.style.cssText='background:transparent;border:none;color:#f55;font-size:16px;cursor:pointer;padding:0;line-height:1;';
+  closePreviewBtn.onclick=closePreview;
+  previewHdr.appendChild(closePreviewBtn);
+  const previewFrame=document.createElement('iframe');
+  previewFrame.style.cssText='position:relative!important;inset:auto!important;width:100%!important;height:100%!important;flex:1;border:none;background:#fff;z-index:auto!important;';
+  previewPane.appendChild(previewHdr);previewPane.appendChild(previewFrame);
+
+  body.appendChild(editorPane);body.appendChild(previewPane);
+
+  /* ── CONSOLE PANEL ── */
+  const consolePanel=document.createElement('div');
+  consolePanel.style.cssText='position:absolute;top:0;right:-380px;width:360px;height:100%;background:#000;border-left:1px solid rgba(0,255,0,0.2);z-index:10;display:flex;flex-direction:column;transition:right 0.2s ease;';
+
+  const cHdr=document.createElement('div');
+  cHdr.style.cssText='display:flex;align-items:center;gap:8px;padding:0 12px;height:40px;border-bottom:1px solid rgba(0,255,0,0.2);background:#000;flex-shrink:0;';
+  const cTitle=document.createElement('span');cTitle.style.cssText='font-size:10px;letter-spacing:3px;color:#0f0;flex:1;';cTitle.textContent='CONSOLE';
+  const cClear=document.createElement('button');cClear.textContent='[ CLEAR ]';
+  cClear.style.cssText='background:transparent;color:#0a0;border:1px solid rgba(0,255,0,0.3);font-family:monospace;font-size:10px;padding:2px 7px;letter-spacing:1px;cursor:pointer;';
+  cClear.onmouseover=()=>{cClear.style.color='#0f0';cClear.style.borderColor='#0f0';};
+  cClear.onmouseout=()=>{cClear.style.color='#0a0';cClear.style.borderColor='rgba(0,255,0,0.3)';};
+  cClear.onclick=()=>logOut.innerHTML='';
+  const cClose=document.createElement('button');cClose.textContent='[ X ]';
+  cClose.style.cssText='background:transparent;color:#f55;border:1px solid rgba(255,85,85,0.3);font-family:monospace;font-size:10px;padding:2px 7px;letter-spacing:1px;cursor:pointer;';
+  cClose.onmouseover=()=>{cClose.style.background='rgba(255,85,85,0.1)';cClose.style.borderColor='#f55';};
+  cClose.onmouseout=()=>{cClose.style.background='transparent';cClose.style.borderColor='rgba(255,85,85,0.3)';};
+  cClose.onclick=()=>toggleConsole();
+  cHdr.appendChild(cTitle);cHdr.appendChild(cClear);cHdr.appendChild(cClose);
+
+  const logOut=document.createElement('div');
+  logOut.style.cssText='flex:1;overflow-y:auto;background:#000;font-size:12px;';
+
+  const evalRow=document.createElement('div');
+  evalRow.style.cssText='display:flex;align-items:center;border-top:1px solid rgba(0,255,0,0.2);flex-shrink:0;background:#000;';
+  const evalPrompt=document.createElement('span');evalPrompt.textContent='>';
+  evalPrompt.style.cssText='padding:0 8px;color:#0a0;font-size:13px;flex-shrink:0;user-select:none;';
+  const evalInput=document.createElement('input');evalInput.type='text';evalInput.placeholder='run JS in preview...';
+  evalInput.style.cssText='flex:1;background:transparent;border:none;color:#0f0;font-family:monospace;font-size:12px;padding:8px 0;outline:none;caret-color:#0f0;';
+  const evalHistory=[];let evalHistIdx=-1;
+  evalInput.onkeydown=e=>{
+    if(e.key==='Enter'){
+      const expr=evalInput.value.trim();if(!expr)return;
+      evalHistory.unshift(expr);evalHistIdx=-1;
+      addLog('input','> '+expr);evalInput.value='';
+      if(activeIframe){try{activeIframe.contentWindow.postMessage({__rceval:expr},'*');}catch(err){addLog('error',err.message);}}
+      else addLog('warn','No preview — click [ RENDER ] first');
+    } else if(e.key==='ArrowUp'){e.preventDefault();if(evalHistIdx<evalHistory.length-1){evalHistIdx++;evalInput.value=evalHistory[evalHistIdx]||'';}}
+    else if(e.key==='ArrowDown'){e.preventDefault();if(evalHistIdx>0){evalHistIdx--;evalInput.value=evalHistory[evalHistIdx]||'';}else{evalHistIdx=-1;evalInput.value='';}}
+  };
+  evalRow.appendChild(evalPrompt);evalRow.appendChild(evalInput);
+  consolePanel.appendChild(cHdr);consolePanel.appendChild(logOut);consolePanel.appendChild(evalRow);
+  body.appendChild(consolePanel);
+
+  /* ── STATUS BAR ── */
+  const statusBar=document.createElement('div');
+  statusBar.style.cssText='padding:3px 16px;height:22px;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#0a0;letter-spacing:2px;border-top:1px solid rgba(0,255,0,0.15);background:#000;flex-shrink:0;';
+  const statusLeft=document.createElement('span');
+  const statusRight=document.createElement('span');
+  statusBar.appendChild(statusLeft);statusBar.appendChild(statusRight);
+
+  page.appendChild(hdr);page.appendChild(body);page.appendChild(statusBar);
+  document.body.appendChild(page);
+  addCopyright();
+
+  /* ── LOG FN ── */
+  const LCOL={log:'#0f0',warn:'#fa0',error:'#f55',info:'#4af',network:'#c9f',input:'#0a0'};
+  function addLog(type,text){
+    const d=new Date();
+    const ts=d.toTimeString().split(' ')[0]+'.'+String(d.getMilliseconds()).padStart(3,'0');
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;padding:3px 0;border-bottom:1px solid rgba(0,255,0,0.05);';
+    row.onmouseover=()=>row.style.background='rgba(0,255,0,0.03)';
+    row.onmouseout=()=>row.style.background='transparent';
+    const tsEl=document.createElement('span');
+    tsEl.style.cssText='min-width:70px;padding:0 6px;color:rgba(0,255,0,0.3);font-size:10px;flex-shrink:0;padding-top:2px;';
+    tsEl.textContent=ts;
+    const bar=document.createElement('span');
+    bar.style.cssText='width:2px;flex-shrink:0;background:'+(LCOL[type]||'#0f0')+';opacity:0.7;';
+    const msg=document.createElement('span');
+    msg.style.cssText='flex:1;padding:0 8px;color:'+(LCOL[type]||'#0f0')+';word-break:break-all;white-space:pre-wrap;line-height:1.5;';
+    msg.textContent=text;
+    row.appendChild(tsEl);row.appendChild(bar);row.appendChild(msg);
+    logOut.appendChild(row);logOut.scrollTop=logOut.scrollHeight;
+    // flash console btn red on error
+    if(type==='error'&&!consoleOpen){consoleBtn.style.color='#f55';consoleBtn.style.borderColor='#f55';setTimeout(()=>{consoleBtn.style.color='#0f0';consoleBtn.style.borderColor='rgba(0,255,0,0.4)';},1500);}
+  }
+
+  /* ── MESSAGE BRIDGE ── */
+  function onMsg(e){
+    if(e.data&&e.data.__rclog) addLog(e.data.type,e.data.text);
+    if(e.data&&e.data.__rceval_result) addLog(e.data.error?'error':'log',e.data.result);
+  }
+  window.addEventListener('message',onMsg);
+
+  /* ── LINE NUMBERS ── */
+  function updateLineNums(){
+    const lines=ta.value.split('\n').length;
+    let html='';
+    for(let i=1;i<=lines;i++) html+=`<div style="padding:0 10px;">${i}</div>`;
+    lineNums.innerHTML=html;
+    lineNums.scrollTop=ta.scrollTop;
+  }
+  ta.addEventListener('input',()=>{updateLineNums();updateStatus();});
+  ta.addEventListener('scroll',()=>lineNums.scrollTop=ta.scrollTop);
+  ta.addEventListener('keydown',e=>{
+    // Tab inserts 2 spaces
+    if(e.key==='Tab'){
+      e.preventDefault();
+      const s=ta.selectionStart,end=ta.selectionEnd;
+      ta.value=ta.value.substring(0,s)+'  '+ta.value.substring(end);
+      ta.selectionStart=ta.selectionEnd=s+2;
+      updateLineNums();
+    }
+    // auto-close brackets/quotes
+    const pairs={'(':')','{':'}','[':']','"':'"',"'":"'"};
+    if(pairs[e.key]&&!e.ctrlKey&&!e.metaKey){
+      const s=ta.selectionStart,en=ta.selectionEnd;
+      if(s===en){
+        e.preventDefault();
+        ta.value=ta.value.substring(0,s)+e.key+pairs[e.key]+ta.value.substring(en);
+        ta.selectionStart=ta.selectionEnd=s+1;
+      }
     }
   });
 
-  const tb=document.createElement("div");tb.className="toolbar";
-
-  const renderBtn=makeBtn("Render",()=>{
-    const html=ta.value;
-    clearBody();
-
-    const bridge=`<script>(function(){
-  function send(type,args){
-    const text=args.map(a=>{if(typeof a==="object"){try{return JSON.stringify(a,null,2);}catch(e){return String(a);}}return String(a);}).join(" ");
-    try{window.parent.postMessage({__rclog:true,type,text},"*");}catch(e){}
+  /* ── STATUS ── */
+  function updateStatus(){
+    const lines=ta.value.split('\n').length;
+    const chars=ta.value.length;
+    statusLeft.textContent='LINES: '+lines+'  CHARS: '+chars;
+    const pos=ta.selectionStart;
+    const before=ta.value.substring(0,pos);
+    const ln=before.split('\n').length;
+    const col=before.split('\n').pop().length+1;
+    statusRight.textContent='LN '+ln+'  COL '+col;
   }
-  const _log=console.log,_warn=console.warn,_error=console.error,_info=console.info;
-  console.log=(...a)=>{_log(...a);send("log",a);};
-  console.warn=(...a)=>{_warn(...a);send("warn",a);};
-  console.error=(...a)=>{_error(...a);send("error",a);};
-  console.info=(...a)=>{_info(...a);send("info",a);};
-  window.addEventListener("error",e=>{send("error",["Uncaught: "+e.message+"\\n  at "+(e.filename||"?").split("/").pop()+":"+e.lineno+":"+e.colno]);});
-  window.addEventListener("unhandledrejection",e=>{send("error",["Unhandled rejection: "+(e.reason?.message||String(e.reason))]);});
-  const _fetch=window.fetch;
-  window.fetch=async(...args)=>{
-    const url=typeof args[0]==="string"?args[0]:args[0]?.url;
-    try{const res=await _fetch(...args);send(res.ok?"network":"error",[(res.ok?"Fetch OK ":"Fetch FAIL ")+res.status+" \u2014 "+url]);return res;}
-    catch(err){send("network",["Fetch error: "+err.message+" \u2014 "+url]);throw err;}
-  };
+  ta.addEventListener('click',updateStatus);
+  ta.addEventListener('keyup',updateStatus);
+
+  /* ── WRAP TOGGLE ── */
+  let wrapOn=false;
+  function toggleWrap(){
+    wrapOn=!wrapOn;
+    ta.wrap=wrapOn?'soft':'off';
+    ta.style.whiteSpace=wrapOn?'pre-wrap':'pre';
+    ta.style.overflowWrap=wrapOn?'break-word':'normal';
+    wrapBtn.textContent=wrapOn?'[ WRAP ON ]':'[ WRAP ]';
+  }
+
+  /* ── RENDER ── */
+  const bridge=`<script>(function(){
+  function s(type,args){const text=args.map(a=>{if(a instanceof Error)return a.stack||a.message;if(typeof a==="object"&&a!==null){try{return JSON.stringify(a,null,2);}catch(e){return String(a);}}return String(a);}).join(" ");try{window.parent.postMessage({__rclog:true,type,text},"*");}catch(e){}}
+  const _l=console.log,_w=console.warn,_e=console.error,_i=console.info;
+  console.log=(...a)=>{_l(...a);s("log",a);};console.warn=(...a)=>{_w(...a);s("warn",a);};
+  console.error=(...a)=>{_e(...a);s("error",a);};console.info=(...a)=>{_i(...a);s("info",a);};
+  window.addEventListener("error",e=>{s("error",["Uncaught "+e.message+" \u2014 "+(e.filename||"?").split("/").pop()+":"+e.lineno]);});
+  window.addEventListener("unhandledrejection",e=>{s("error",["Unhandled rejection: "+(e.reason?.message||String(e.reason))]);});
+  window.addEventListener("message",e=>{if(e.data&&e.data.__rceval){try{const r=eval(e.data.__rceval);window.parent.postMessage({__rceval_result:true,result:r===undefined?"undefined":JSON.stringify(r)??String(r)},"*");}catch(err){window.parent.postMessage({__rceval_result:true,error:true,result:err.message},"*");}}});
+  const _f=window.fetch;window.fetch=async(...a)=>{const url=typeof a[0]==="string"?a[0]:a[0]?.url;try{const r=await _f(...a);s(r.ok?"network":"error",[(r.ok?"\u2713 ":"\u2717 ")+r.status+" \u2014 "+url]);return r;}catch(err){s("error",["Fetch failed: "+err.message]);throw err;}};
 }());<\/script>`;
 
-    let injectedHtml=html;
-    if(/<head[^>]*>/i.test(html))injectedHtml=html.replace(/(<head[^>]*>)/i,"$1"+bridge);
-    else if(/<body[^>]*>/i.test(html))injectedHtml=html.replace(/(<body[^>]*>)/i,bridge+"$1");
-    else injectedHtml=bridge+html;
+  function doRender(){
+    const html=ta.value;
+    let injected=html;
+    if(/<head[^>]*>/i.test(html)) injected=html.replace(/(<head[^>]*>)/i,'$1'+bridge);
+    else injected=bridge+html;
+    previewFrame.srcdoc=injected;
+    previewPane.style.width='45%';
+    editorPane.style.flex='1';
+    activeIframe=previewFrame;
+    addLog('info','Rendered at '+new Date().toLocaleTimeString());
+    statusBadge.textContent='RENDERED';statusBadge.style.color='#0f0';
+    previewFrame.onload=()=>{activeIframe=previewFrame;};
+    renderBtn.textContent='[ RE-RENDER ]';
+  }
 
-    window.addEventListener("message",function onRcLog(e){
-      if(e.data&&e.data.__rclog){addEditorLog(e.data.type,e.data.text);}
-    });
+  function closePreview(){
+    previewPane.style.width='0';
+    activeIframe=null;
+    renderBtn.textContent='[ RENDER ]';
+    statusBadge.textContent='READY';statusBadge.style.color='#0a0';
+  }
 
-    const iframe=document.createElement("iframe");
-    iframe.srcdoc=injectedHtml;
-    iframe.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:3;";
-    const tb2=document.createElement("div");tb2.className="toolbar";
-    tb2.appendChild(makeBtn("Back to Editor",()=>showEditor(html,goBack)));
-    document.body.appendChild(iframe);
-    document.body.appendChild(tb2);
-    addCopyright();
-  });
-
-  const dlBtn=makeBtn("Download",()=>{const blob=new Blob([ta.value],{type:"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="index.html";a.click();});
-  const ulBtn=makeBtn("Upload",()=>{const input=document.createElement("input");input.type="file";input.accept=".html,.htm";input.onchange=e=>{const r=new FileReader();r.onload=()=>ta.value=r.result;r.readAsText(e.target.files[0]);};input.click();});
-
-  const consoleBtn=makeBtn("Console",()=>{
+  /* ── CONSOLE TOGGLE ── */
+  function toggleConsole(){
     consoleOpen=!consoleOpen;
-    consolePanel.style.right=consoleOpen?"0":"-340px";
-    ta.style.right=consoleOpen?"330px":"0";
-    consoleBtn.textContent=consoleOpen?"Console [x]":"Console";
-  });
+    consolePanel.style.right=consoleOpen?'0':'-380px';
+    consoleBtn.textContent=consoleOpen?'[ CONSOLE × ]':'[ CONSOLE ]';
+    if(consoleOpen) setTimeout(()=>evalInput.focus(),220);
+  }
 
-  const btns=bindEscIfTerminal(goBack)?[renderBtn,dlBtn,ulBtn,consoleBtn]:[makeBtn("Back",goBack),renderBtn,dlBtn,ulBtn,consoleBtn];
-  btns.forEach(b=>tb.appendChild(b));
-  document.body.appendChild(ta);
-  document.body.appendChild(tb);
-  document.body.appendChild(consolePanel);
-  addCopyright();
+  updateLineNums();
+  updateStatus();
+  ta.focus();
 }
 
 function showURLPage(goBack){
@@ -3818,7 +3973,7 @@ function _launchURLPage(goBack,fromTerminal){
 
   const infoCard=document.createElement("div");infoCard.className="url-page-sb-card";
   infoCard.style.cssText="padding:10px 12px;font-size:10px;color:#0a0;letter-spacing:1px;line-height:1.9;";
-  infoCard.innerHTML='ENTER A URL TO LOAD IT<br>IN THE BROWSER FRAME.<br><br>ENTER ANY OTHER TEXT<br>TO SEARCH WIKIPEDIA.';
+  infoCard.innerHTML='ENTER A URL TO LOAD IT<br>IN THE BROWSER FRAME.<br><br>ENTER ANY OTHER TEXT<br>TO SEARCH.';
   sbScroll.appendChild(infoCard);
 
   sb.appendChild(sbHdr);sb.appendChild(sbScroll);
@@ -3829,7 +3984,7 @@ function _launchURLPage(goBack,fromTerminal){
   /* search bar */
   const searchBar=document.createElement("div");searchBar.className="url-page-search-bar";
   const addrInput=document.createElement("input");
-  addrInput.type="text";addrInput.placeholder="enter url or search wikipedia...";
+  addrInput.type="text";addrInput.placeholder="type something or enter a url to search...";
   addrInput.spellcheck=false;addrInput.autocomplete="off";
 
   function mkPageBtn(txt,fn){
@@ -5410,7 +5565,7 @@ const fs={
       "notepad.exe":"(executable)",
       "explorer.exe":"(executable)",
       "sysusage.exe":"(executable)",
-      "readme.txt":"Data OS 11.0.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\nsysusage.exe  - System Usage Monitor\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - System Usage Monitor\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
+      "readme.txt":"Data OS 11.1.0 - System Guide\r\n================================\r\n\r\nWELCOME\r\n-------\r\nData OS is a browser-based terminal environment with apps, games,\r\nand a full virtual filesystem. Type commands in the terminal to\r\nnavigate and launch programs.\r\n\r\n\r\nTERMINAL COMMANDS\r\n-----------------\r\ncls          - Clear the screen\r\ndir          - List files in current directory\r\ncd [folder]  - Change directory (case-insensitive)\r\nmd [name]    - Make a new folder\r\nrd [name]    - Remove a folder\r\ndel [file]   - Delete a file\r\ntype [file]  - Print a file's contents\r\ncopy [a] [b] - Copy a file\r\nmove [a] [b] - Move a file\r\nren [a] [b]  - Rename a file\r\necho [text]  - Print text to screen\r\nver          - Show OS version\r\ndate / time  - Show current date or time\r\nwhoami       - Show current user\r\nhostname     - Show computer name\r\nsysteminfo   - Show system information\r\ntasklist     - List running processes\r\nipconfig     - Show network configuration\r\nping [host]  - Ping a host\r\nset          - Show environment variables\r\nhelp [cmd]   - Get help on any command\r\nez-mode      - Open EZ-Mode\r\n\r\n\r\nAPPS\r\n----\r\nnotepad.exe  - Text editor (ESC to close)\r\nexplorer.exe - File Explorer (ESC to close)\r\nsysusage.exe  - System Usage Monitor\r\n\r\nSmall apps are in C:\\Users\\anonymous\\Apps\r\ncd Apps, then type the name to launch:\r\n\r\n  calc.exe       - Calculator\r\n  htmleditor.exe - HTML Editor with live preview\r\n  browser.exe  - Load any URL in a frame\r\n  base64.exe     - Base64 encoder/decoder\r\n  stress.exe     - System Usage Monitor\r\n  paint.exe      - Freehand drawing canvas\r\n  pixelart.exe   - Pixel art editor\r\n  ascii.exe      - Image to ASCII art converter\r\n  hacker.exe     - Hacker Typer\r\n  music.exe      - Music Player\r\n\r\n\r\nGAMES\r\n-----\r\nGames are in C:\\Users\\anonymous\\Games\r\n  cd Games, then type the name:\r\n\r\n  pong         - W/S to move, SPACE to start\r\n  tetris       - Arrow keys, SPACE to hard drop\r\n  minesweeper  - Left-click reveal, right-click flag\r\n  snake        - Arrow keys, SPACE to start\r\n  breakout     - Mouse or arrow keys, SPACE to launch\r\n  2048         - Arrow keys to slide tiles\r\n\r\nAll games: ESC to exit, R to restart.\r\n\r\n\r\nFILESYSTEM LAYOUT\r\n-----------------\r\nC:\\\r\n  Users\\\r\n    anonymous\\       <- Your home folder\r\n      Desktop\\\r\n      Documents\\\r\n      Downloads\\\r\n      Apps\\          <- Small apps\r\n      Games\\         <- Games\r\n  Program Files\\\r\n    Google\\\r\n      Chrome\\\r\n\r\nTip: cd is case-insensitive, so 'cd apps' works fine.\r\n",
     },
     "C:\\Users\\anonymous\\Desktop":{
       "EZ-Mode.html":"(this file)",
@@ -5578,8 +5733,8 @@ function showTerminal(goBack){
     "paint.exe":()=>{print("Opening Paint...");setTimeout(()=>showDraw(showTerminal),100);},
     "explorer.exe":()=>launchExplorer("C:\\Users\\anonymous"),
     "chrome.exe":()=>{print("Google Chrome is already running.");},
-    "cmd.exe":()=>{print("Microsoft Windows [Version 11.0.0.0000]");print("(C) Microsoft Corporation. All rights reserved.");print("");print("You are already in cmd.exe.");},
-    "sysssage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
+    "cmd.exe":()=>{print("Microsoft Windows [Version 11.1.0.0000]");print("(C) Data OS. All rights reserved.");print("");print("You are already in cmd.exe.");},
+    "sysusage.exe":()=>{print("Opening System Usage Monitor...");setTimeout(()=>showStress(showTerminal),100);},
     "htmleditor.exe":()=>{print("Opening HTML Editor...");setTimeout(()=>showEditor("",showTerminal),100);},
     "browser.exe":()=>{print("Opening Browser...");setTimeout(()=>showURLPage(showTerminal),100);},
     "base64.exe":()=>{print("Opening Cipher Tool... ESC to exit.");setTimeout(()=>showCipher(showTerminal),100);},
@@ -5815,7 +5970,7 @@ function showTerminal(goBack){
 
       case"ver":
         print("");
-        print("Data OS Terminal [Version 11.0.0]");
+        print("Data OS Terminal [Version 11.1.0]");
         print("");
         break;
 
@@ -5838,7 +5993,7 @@ function showTerminal(goBack){
       case"systeminfo":
         print("Host Name:                 SCHOOL-PC");
         print("OS Name:                   Data OS");
-        print("OS Version:                11.0.0 Build 19246");
+        print("OS Version:                11.1.0 Build 19246");
         print("System Manufacturer:       Google");
         print("System Model:              Chromebook");
         print("System Type:               x64-based PC");
@@ -6027,7 +6182,7 @@ function showTerminal(goBack){
     print("");
   }
 
-  print(`DATA OS 11.0.0`);
+  print(`DATA OS 11.1.0`);
   print(`Type 'help' for a list of available commands.`);
   print(`Type 'ez-mode' to open EZ-Mode.`);
   print(``);
